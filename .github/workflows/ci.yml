@@ -7,7 +7,9 @@
 #   - dev servers start with the mod on the classpath (scripts/server-smoke-test.sh; 1.20.1 Fabric and 26.3 Fabric
 #     must pass, the other rows only report),
 #   - a real 1.20.1 client (Forge and Fabric) walks through every themed screen, screenshots it and quits
-#     (runSnapshots), which also proves the Fabric mixins apply.
+#     (runSnapshots), which also proves the Fabric mixins apply,
+#   - a real 1.21.1 / 26.2 / 26.3 client starts, loads every mixin target, opens the settings screen and quits
+#     (PINKIFIED_SELFTEST; the Fabric 1.21.1 and 26.3 rows must pass, the others only report).
 # It never publishes anything.
 
 name: CI
@@ -298,18 +300,23 @@ jobs:
             1.20.1/${{ matrix.loader }}/runs/snapshots/crash-reports/**
           if-no-files-found: ignore
 
-  # TEMPORARY: prints the signatures of the game and loader classes the ports use (no local JDK 25 / game jars).
-  api-probe:
-    name: API probe ${{ matrix.dir }}
+  # 1.21.1 and 26.x: a real client starts with the mod, loads every mixin target, opens the settings screen and quits
+  # (PINKIFIED_SELFTEST, see client/dev/SelfTest.java). The Fabric 1.21.1 and 26.3 rows must pass; the other rows only
+  # report, since NeoForge's dev clients can stop for reasons outside the mod.
+  client-launch:
+    name: Client launch test, ${{ matrix.loader }} ${{ matrix.minecraft }}
     runs-on: ubuntu-latest
-    continue-on-error: true
+    continue-on-error: ${{ matrix.optional }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { dir: "1.21.1", java: "21" }
-          - { dir: "26.2", java: "25" }
-          - { dir: "26.3", java: "25" }
+          - { minecraft: "1.21.1", loader: fabric, gradle_java: "21", optional: false }
+          - { minecraft: "1.21.1", loader: neoforge, gradle_java: "21", optional: true }
+          - { minecraft: "26.2", loader: fabric, gradle_java: "25", optional: true }
+          - { minecraft: "26.2", loader: neoforge, gradle_java: "25", optional: true }
+          - { minecraft: "26.3", loader: fabric, gradle_java: "25", optional: false }
+          - { minecraft: "26.3", loader: neoforge, gradle_java: "25", optional: true }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -317,66 +324,47 @@ jobs:
           distribution: temurin
           java-version: |
             21
-            ${{ matrix.java }}
+            ${{ matrix.gradle_java }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Set up the game jars
-        working-directory: ${{ matrix.dir }}
+      - name: Install Xvfb and Mesa
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libegl1 libegl-mesa0 mesa-utils > /dev/null
+      - name: Launch the client, open the settings screen and quit
+        timeout-minutes: 30
+        working-directory: ${{ matrix.minecraft }}
         env:
-          GJ: ${{ matrix.java }}
+          GRADLE_JAVA: ${{ matrix.gradle_java }}
+          LOADER: ${{ matrix.loader }}
+          PINKIFIED_SELFTEST: "1"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          # 26.3 opens its window with SDL3, which wants an sRGB-capable framebuffer that Xvfb's GLX visuals lack, so
+          # it goes through EGL. GLFW (1.21.1, 26.2) ignores this.
+          SDL_VIDEO_FORCE_EGL: "1"
         run: |
+          var="JAVA_HOME_${GRADLE_JAVA}_X64"
+          export JAVA_HOME="${!var}"
           chmod +x gradlew
-          var="JAVA_HOME_${GJ}_X64"; export JAVA_HOME="${!var}"
-          ./gradlew :fabric:compileJava :neoforge:compileJava --continue -q 2>&1 | tail -5 || true
-      - name: Print class signatures
-        env:
-          GJ: ${{ matrix.java }}
+          mkdir -p "$LOADER/runs/client"
+          printf '%s\n' onboardAccessibility:false pauseOnLostFocus:false renderDistance:4 maxFps:60 enableVsync:false \
+            tutorialStep:none narrator:0 realmsNotifications:false soundCategory_master:0.0 > "$LOADER/runs/client/options.txt"
+          timeout 25m xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew ":$LOADER:runClient" --no-daemon \
+            -Porg.gradle.java.installations.fromEnv=JAVA_HOME_21_X64,JAVA_HOME_25_X64 2>&1 | tee "$GITHUB_WORKSPACE/client-launch.log"
+          echo "runClient exited with ${PIPESTATUS[0]}"
+      - name: Check the log
+        working-directory: ${{ matrix.minecraft }}/${{ matrix.loader }}/runs/client
         run: |
-          var="JAVA_HOME_${GJ}_X64"; export JAVA_HOME="${!var}"
-          python3 - <<'PY'
-          import os, subprocess, zipfile
-          names = """GuiGraphicsExtractor GuiGraphics Screen TitleScreen DeathScreen PauseScreen AbstractContainerScreen TooltipRenderUtil
-          AbstractWidget AbstractButton Button AbstractSliderButton AbstractSelectionList ObjectSelectionList Renderable
-          GuiEventListener SplashRenderer LogoRenderer Gui Hud DebugScreenOverlay WidgetSprites AbstractScrollArea
-          DynamicTexture AbstractTexture TextureManager TextureAtlas TextureAtlasSprite SpriteContents MissingTextureAtlasSprite
-          SpriteId AtlasManager AtlasIds NativeImage SingleQuadParticle Particle ParticleProvider SpriteSet ParticleEngine
-          TextureSheetParticle ParticleRenderType SoundManager SoundEngine MusicManager SimpleSoundInstance SoundInstance
-          KeyMapping Minecraft RenderPipelines MouseButtonEvent KeyEvent InputWithModifiers GpuDevice CommandEncoder
-          GpuTexture RenderSystem Music Musics ResourceManager Identifier ResourceLocation InputConstants
-          ScreenEvent RenderTooltipEvent ContainerScreenEvent RenderGuiLayerEvent RegisterGuiLayersEvent VanillaGuiLayers
-          PlaySoundEvent RegisterParticleProvidersEvent AddClientReloadListenersEvent RegisterClientReloadListenersEvent
-          RegisterKeyMappingsEvent ClientTickEvent IConfigScreenFactory ModListScreen BrandingControl KeyConflictContext
-          TextureAtlasStitchedEvent ScreenEvents Screens HudElementRegistry VanillaHudElements HudElement HudLayerRegistrationCallback
-          KeyMappingHelper KeyBindingHelper ParticleProviderRegistry ParticleFactoryRegistry ResourceLoader ResourceManagerHelper
-          ClientTickEvents ScreenMouseEvents IdentifiableResourceReloadListener PreparableReloadListener ResourceManagerReloadListener""".split()
-          want = set(names)
-          roots = [os.path.expanduser('~/.gradle'), os.getcwd()]
-          jars = []
-          for r in roots:
-              for dp, dn, fn in os.walk(r):
-                  for f in fn:
-                      if f.endswith('.jar') and ('-sources' not in f):
-                          p = os.path.join(dp, f)
-                          if any(k in p for k in ('minecraft', 'neoforge', 'fabric', 'blaze3d', 'renderpearl', 'mojang')):
-                              jars.append(p)
-          print(len(jars), 'jars'); seen = {}
-          for j in sorted(jars, key=lambda p: -os.path.getsize(p)):
-              try:
-                  z = zipfile.ZipFile(j)
-              except Exception:
-                  continue
-              for n in z.namelist():
-                  if not n.endswith('.class'):
-                      continue
-                  base = n.rsplit('/', 1)[-1][:-6]
-                  outer = base.split('$')[0]
-                  if outer in want and n not in seen and not n.startswith('META-INF'):
-                      seen[n] = j
-          by_cls = sorted(seen.items())
-          print(len(by_cls), 'classes')
-          for n, j in by_cls:
-              cls = n[:-6].replace('/', '.')
-              out = subprocess.run([os.path.join(os.environ['JAVA_HOME'], 'bin', 'javap'), '-p', '-cp', j, cls],
-                                   capture_output=True, text=True).stdout
-              print('=== ' + cls + '  [' + os.path.basename(j) + ']')
-              print(out)
-          PY
+          [ ! -d crash-reports ] || { head -150 crash-reports/*.txt; exit 1; }
+          log=logs/latest.log
+          [ -f "$log" ] || { echo "The client wrote no log"; tail -80 "$GITHUB_WORKSPACE/client-launch.log"; exit 1; }
+          grep -n "\[pinkified\] self-test" "$log" || true
+          if grep -q "\[pinkified\] self-test FAILED" "$log"; then grep -n -A40 "self-test FAILED" "$log" | head -80; exit 1; fi
+          grep -q "\[pinkified\] self-test passed" "$log" || { echo "The self-test did not finish"; tail -80 "$log"; exit 1; }
+          if grep -E "ERROR|Exception|Caused by" "$log" | grep -E 'com.sugarplumstudios|pinkified([^-.a-z]|$)|[Mm]ixin'; then echo "The log has errors naming Pinkified or a mixin"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-launch-${{ matrix.minecraft }}-${{ matrix.loader }}
+          path: |
+            client-launch.log
+            ${{ matrix.minecraft }}/${{ matrix.loader }}/runs/client/logs/latest.log
+            ${{ matrix.minecraft }}/${{ matrix.loader }}/runs/client/crash-reports/**
+          if-no-files-found: ignore

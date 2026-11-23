@@ -121,6 +121,9 @@ and on 1.20.1 `runSnapshots`. `runSnapshots` launches the game with a developer 
 every theme, each settings tab, the options and multiplayer screens, creates a throwaway world, opens the inventory,
 crafting, furnace, anvil, enchanting, chest, creative, pause and game-over screens, saves screenshots to
 `runs/snapshots/screenshots/pinkified_*.png` and quits. It is only active with `-Dpinkified.devshots=true`.
+On 1.21.1 and 26.x, starting `runClient` with the environment variable `PINKIFIED_SELFTEST=1` runs a short launch
+check instead: once the main menu is up it loads every mixin target, opens the settings screen, logs
+`[pinkified] self-test passed` and quits. CI runs it for every 1.21.1 and 26.x loader.
 
 ## Releasing
 

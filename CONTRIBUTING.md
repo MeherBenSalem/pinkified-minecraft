@@ -34,7 +34,9 @@ synthesised by `tools/audiogen/AudioGenerator.java`; see the README for the comm
 ## Testing in game
 
 `./gradlew :<loader>:runClient` in a workspace starts a dev client. On 1.20.1, `./gradlew :forge:runSnapshots` (or
-`:fabric:runSnapshots`) visits every themed screen, saves screenshots and quits; CI runs it for both loaders. If you
+`:fabric:runSnapshots`) visits every themed screen, saves screenshots and quits; CI runs it for both loaders. On 1.21.1
+and 26.x, `PINKIFIED_SELFTEST=1 ./gradlew :<loader>:runClient` loads every mixin target, opens the settings screen and
+quits; CI runs it for every loader. If you
 change something visible, check it on every workspace you touched, for Fabric and NeoForge/Forge.
 
 ## Coding expectations

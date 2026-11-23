@@ -1,6 +1,7 @@
 package com.sugarplumstudios.pinkified.client;
 
 import com.sugarplumstudios.pinkified.client.config.PinkConfig;
+import com.sugarplumstudios.pinkified.client.dev.SelfTest;
 import com.sugarplumstudios.pinkified.client.gui.screen.PinkSettingsScreen;
 import com.sugarplumstudios.pinkified.client.particle.AmbientEffects;
 import com.sugarplumstudios.pinkified.client.sound.MusicHooks;
@@ -53,5 +54,6 @@ public final class PinkifiedClient {
         GuiSpriteThemer.tick();
         MusicHooks.onClientTick();
         AmbientEffects.onClientTick();
+        if (SelfTest.enabled()) SelfTest.onClientTick();
     }
 }
