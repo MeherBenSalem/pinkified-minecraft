@@ -87,7 +87,7 @@ public class PinkTitleScreen extends Screen {
             }).entrance(d * 3, 40));
         }
         addRenderableWidget(new PinkButton(cx - bw / 2, top + gap * 3 + 8, 98, 20, Component.translatable("menu.options"),
-                b -> minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options))).entrance(d * 4, -40));
+                b -> minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options, false))).entrance(d * 4, -40));
         addRenderableWidget(new PinkButton(cx + 2, top + gap * 3 + 8, 98, 20, Component.translatable("menu.quit"),
                 b -> minecraft.stop()).entrance(d * 4, 40));
 

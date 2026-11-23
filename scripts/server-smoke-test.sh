@@ -21,6 +21,11 @@ simulation-distance=4
 level-type=minecraft\:flat
 level-seed=20261123
 PROPS
+if [ "$VERSION" = 1.20.1 ] && [ "$LOADER" = forge ]; then
+  # In the Forge 1.20.1 dev environment the LAN advertiser loads a client-only class and the server stops.
+  mkdir -p "$RUN/defaultconfigs"
+  printf '[server]\n\tadvertiseDedicatedServerToLan = false\n' > "$RUN/defaultconfigs/forge-server.toml"
+fi
 
 LOG="$ROOT/server-smoke-$VERSION-$LOADER.log"
 ./gradlew ":$LOADER:runServer" --stacktrace \

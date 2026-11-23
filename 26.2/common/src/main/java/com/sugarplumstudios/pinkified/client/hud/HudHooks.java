@@ -47,7 +47,7 @@ public final class HudHooks {
         if (style == CrosshairStyle.VANILLA || crosshairCancelled) return;
         Minecraft mc = Minecraft.getInstance();
         Options o = mc.options;
-        if (o.hideGui || mc.player == null || mc.gameMode == null || !o.getCameraType().isFirstPerson()) return;
+        if (mc.gui.hud.isHidden() || mc.player == null || mc.gameMode == null || !o.getCameraType().isFirstPerson()) return;
         if (mc.gameMode.getPlayerMode() == GameType.SPECTATOR && !canSpectatorTarget(mc, mc.hitResult)) return;
         int c = ThemedTextures.CROSSHAIR_CELL;
         g.blit(RenderPipelines.GUI_TEXTURED, ThemedTextures.CROSSHAIRS, (width - c) / 2, (height - c) / 2, style.ordinal() * c, 0, c, c,
@@ -68,7 +68,7 @@ public final class HudHooks {
     public static void renderXpLevel(GuiGraphicsExtractor g, int width, int height) {
         if (!PinkConfig.on(PinkConfig.THEME_XP) || xpCancelled) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.gameMode == null || mc.options.hideGui) return;
+        if (mc.player == null || mc.gameMode == null || mc.gui.hud.isHidden()) return;
         if (mc.player.jumpableVehicle() != null || !mc.gameMode.hasExperience()) return;
         int level = mc.player.experienceLevel;
         if (level <= 0) return;

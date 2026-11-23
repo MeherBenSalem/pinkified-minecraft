@@ -57,7 +57,7 @@ public final class AmbientEffects {
         ParticleStatus status = mc.options.particles().get();
         if (status == ParticleStatus.MINIMAL) return;
         float density = PinkConfig.get(PinkConfig.PARTICLE_DENSITY).floatValue() * (status == ParticleStatus.DECREASED ? 0.5f : 1f);
-        RandomSource r = level.random;
+        RandomSource r = level.getRandom();
         Palette p = Themes.palette();
 
         if (PinkConfig.on(PinkConfig.AMBIENT_SPARKLES) && r.nextFloat() < 0.07f * density) {

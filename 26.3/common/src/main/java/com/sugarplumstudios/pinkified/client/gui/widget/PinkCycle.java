@@ -60,7 +60,7 @@ public class PinkCycle<E extends Enum<E>> extends AbstractButton {
     public void onPress(InputWithModifiers input) {
         int i = getter.get().ordinal();
         int n = values.length;
-        int next = Screen.hasShiftDown() ? (i - 1 + n) % n : (i + 1) % n;
+        int next = Minecraft.getInstance().hasShiftDown() ? (i - 1 + n) % n : (i + 1) % n;
         setter.accept(values[next]);
     }
 
