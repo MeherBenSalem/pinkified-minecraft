@@ -1,60 +1,186 @@
-# Builds the Forge 1.20.1 jar and checks that it runs: a real Forge dedicated server booted with the built jar
-# (scripts/server-boot-test.sh), and a real client that walks through every themed screen, screenshots it and quits
-# (runSnapshots). Pinkified is client-only and adds nothing to the server side, so it has no GameTests. Runs on pull
-# requests, by hand, and from the Build release jar workflow. It never publishes anything.
+# CI for Pinkified Minecraft (NightBeam convention; modelled on RE:Constructed Wands).
+# Builds all 8 jars (1.20.1 Fabric + Forge; 1.21.1, 26.2, 26.3 Fabric + NeoForge), one job per Minecraft workspace,
+# then checks that exactly those 8 jars exist and carry the right metadata, that every workspace has the same
+# version= and that the metadata ranges stay inside their Minecraft line, and runs the publisher script tests.
+# Pinkified is client-only and adds nothing to the server side, so it has no GameTests. Instead:
+#   - a real Forge 1.20.1 dedicated server boots with the built Forge jar installed (scripts/server-boot-test.sh),
+#   - dev servers start with the mod on the classpath (scripts/server-smoke-test.sh; 1.20.1 Fabric and 26.3 Fabric
+#     must pass, the other rows only report),
+#   - a real 1.20.1 client (Forge and Fabric) walks through every themed screen, screenshots it and quits
+#     (runSnapshots), which also proves the Fabric mixins apply.
+# It never publishes anything.
 
 name: CI
 
 on:
-  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "1.20.1/**"
+      - "1.21.1/**"
+      - "26.2/**"
+      - "26.3/**"
+      - "scripts/**"
+      - "tools/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      # Bundled into every jar by the workspaces' multiloader-common.gradle.
+      - "LICENSE"
+      - ".github/scripts/**"
+      - ".github/workflows/**"
   workflow_dispatch:
-  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build
+  validate:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 24]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Check publisher syntax
+        run: |
+          for f in scripts/*.mjs .github/scripts/*.js; do node --check "$f"; done
+      - name: Test publisher scripts (same-day guard)
+        run: node --test scripts/*.test.mjs
+      # Jar name -> loader + Minecraft version, as the upload step reads it (calendar versions such as 26.2 must
+      # never fall back to 1.21.1).
+      - name: Test jar metadata detection
+        run: node .github/scripts/detect-jar-meta.test.js
+      - name: Check the 8 targets, one version and metadata ranges
+        run: python3 scripts/check_targets.py workspaces
+      - name: Check the Python and shell tools compile
+        run: |
+          python3 -m py_compile scripts/*.py tools/*.py
+          for f in scripts/*.sh; do bash -n "$f"; done
+      - name: The Modrinth description is generated from the CurseForge one
+        run: |
+          python3 tools/make_modrinth_md.py
+          git diff --exit-code -- marketing/modrinth
+
+  build:
+    name: Build ${{ matrix.dir }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { key: "1201", dir: "1.20.1" }
+          - { key: "1211", dir: "1.21.1" }
+          - { key: "262", dir: "26.2" }
+          - { key: "263", dir: "26.3" }
+    steps:
+      - uses: actions/checkout@v4
+      # 21 stays JAVA_HOME (Gradle for 1.20.1/1.21.1); 17 is the 1.20.1 toolchain; the root build hands 26.x
+      # JAVA_HOME_25_X64.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: |
+            17
+            25
+            21
       - uses: gradle/actions/setup-gradle@v4
-      - run: chmod +x gradlew
-      - name: Build
-        run: ./gradlew build --stacktrace
-      - name: Check the jar
+      - name: Build ${{ matrix.dir }} and run its unit tests
         run: |
-          set -e
-          V=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
-          MC=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
-          name="pinkified-forge-$MC-$V.jar"
-          jar="build/libs/$name"
-          ls -la build/libs
-          [ -f "$jar" ] || { echo "Missing $jar"; exit 1; }
-          dir=$(mktemp -d); unzip -q "$jar" -d "$dir"
-          grep -q "Implementation-Version: $V" "$dir/META-INF/MANIFEST.MF" || { echo "Manifest is not $V"; exit 1; }
-          grep -q 'modId="pinkified"' "$dir/META-INF/mods.toml" || { echo "mods.toml has no pinkified"; exit 1; }
-          grep -q "version=\"$V\"" "$dir/META-INF/mods.toml" || { echo "mods.toml version is not $V"; exit 1; }
-          grep -q '^clientSideOnly=true' "$dir/META-INF/mods.toml" || { echo "mods.toml is not client side only"; exit 1; }
-          grep -q 'displayTest="IGNORE_ALL_VERSION"' "$dir/META-INF/mods.toml" || { echo "mods.toml displayTest changed"; exit 1; }
-          [ -f "$dir/com/sugarplumstudios/pinkified/PinkifiedMod.class" ] || { echo "No PinkifiedMod class"; exit 1; }
-          [ -f "$dir/pinkified_logo.png" ] || { echo "No mod list logo"; exit 1; }
-          [ -f "$dir/assets/pinkified/sounds/music/sugarplum_lullaby.ogg" ] || { echo "No menu music"; exit 1; }
-          find "$dir/com" -name '*.class' -exec strings {} + | grep -q -E '^(m|f)_[0-9]+_$' || { echo "The jar is not SRG-mapped"; exit 1; }
-          echo "OK $name $(stat -c %s "$jar") bytes"
+          chmod +x gradlew ${{ matrix.dir }}/gradlew
+          ./gradlew build${{ matrix.key }} --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: jar
-          path: build/libs/pinkified-forge-*.jar
+          name: jars-${{ matrix.dir }}
+          path: |
+            ${{ matrix.dir }}/*/build/libs/pinkified-*.jar
+            !${{ matrix.dir }}/*/build/libs/*-sources.jar
+            !${{ matrix.dir }}/*/build/libs/*-javadoc.jar
+            !${{ matrix.dir }}/common/build/libs/*.jar
+          if-no-files-found: error
 
-  server-test:
-    name: Server boot test with the built jar
+  jars:
+    name: Check the 8 jars
     needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jars-*
+          path: built
+          merge-multiple: true
+      - name: Exactly the 8 convention jars
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p releases
+          find built -name 'pinkified-*.jar' -exec cp -f -t releases/ {} +
+          ls -la releases
+          version="$(python3 scripts/check_targets.py version)"
+          python3 scripts/check_targets.py jars --version "$version" --dir releases --list-file ci-jars.txt
+          mkdir -p ci-jars
+          xargs -a ci-jars.txt cp -f -t ci-jars/
+          # The upload step must be able to read loader + Minecraft version from every built jar name.
+          while IFS= read -r jar; do node .github/scripts/detect-jar-meta.js "$jar"; done < ci-jars.txt
+      - name: Check the jar contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          V="$(python3 scripts/check_targets.py version)"
+          fail() { echo "::error::$1"; exit 1; }
+          for jar in ci-jars/*.jar; do
+            name="$(basename "$jar")"
+            dir="$(mktemp -d)"; unzip -q "$jar" -d "$dir"
+            [ -f "$dir/com/sugarplumstudios/pinkified/PinkifiedMod.class" ] || fail "$name: no PinkifiedMod class"
+            [ -f "$dir/pinkified_logo.png" ] || fail "$name: no mod list logo"
+            [ -f "$dir/assets/pinkified/sounds/music/sugarplum_lullaby.ogg" ] || fail "$name: no menu music"
+            [ -f "$dir/assets/pinkified/lang/en_us.json" ] || fail "$name: no language file"
+            case "$name" in
+              pinkified-forge-*)
+                t="$dir/META-INF/mods.toml"
+                grep -q 'modId="pinkified"' "$t" || fail "$name: mods.toml has no pinkified"
+                grep -q "version=\"$V\"" "$t" || fail "$name: mods.toml version is not $V"
+                grep -q '^clientSideOnly=true' "$t" || fail "$name: mods.toml is not client side only"
+                grep -q 'displayTest="IGNORE_ALL_VERSION"' "$t" || fail "$name: mods.toml displayTest changed"
+                find "$dir/com" -name '*.class' -exec strings {} + | grep -q -E '^(m|f)_[0-9]+_$' || fail "$name: the jar is not SRG-mapped"
+                ;;
+              pinkified-neoforge-*)
+                t="$dir/META-INF/neoforge.mods.toml"
+                grep -q 'modId="pinkified"' "$t" || fail "$name: neoforge.mods.toml has no pinkified"
+                grep -q "version=\"$V\"" "$t" || fail "$name: neoforge.mods.toml version is not $V"
+                ;;
+              pinkified-fabric-*)
+                python3 - "$dir/fabric.mod.json" "$V" <<'PY' || fail "$name: fabric.mod.json is wrong"
+          import json, sys
+          m = json.load(open(sys.argv[1], encoding='utf-8'))
+          assert m['id'] == 'pinkified', m['id']
+          assert m['version'] == sys.argv[2], m['version']
+          assert m['environment'] == 'client', m['environment']
+          assert 'fabric-api' in m['depends'], m['depends']
+          PY
+                ;;
+            esac
+            echo "OK $name $(stat -c %s "$jar") bytes"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinkified-jars
+          path: ci-jars/*.jar
+          if-no-files-found: error
+
+  server-boot:
+    name: Forge 1.20.1 server boot with the built jar
+    needs: jars
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,12 +190,12 @@ jobs:
           java-version: "17"
       - uses: actions/download-artifact@v4
         with:
-          name: jar
+          name: pinkified-jars
           path: jar
       - run: chmod +x scripts/server-boot-test.sh
       - name: Boot a Forge server with the jar installed
         timeout-minutes: 15
-        run: scripts/server-boot-test.sh jar/pinkified-forge-*.jar
+        run: scripts/server-boot-test.sh jar/pinkified-forge-1.20.1-*.jar
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -80,42 +206,177 @@ jobs:
             build/boot-test-server/crash-reports/**
           if-no-files-found: ignore
 
-  client-test:
-    name: Client launch test
+  # Starts a real dev server with the mod on the classpath. Pinkified is client-only, so this proves a server that
+  # has it installed still starts cleanly. Forge 1.20.1's and NeoForge's dev servers can stop for reasons outside
+  # the mod, so those rows only report.
+  server-smoke:
+    name: Server smoke test, ${{ matrix.loader }} ${{ matrix.minecraft }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.optional }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { minecraft: "1.20.1", loader: fabric, gradle_java: "21", optional: false }
+          - { minecraft: "1.20.1", loader: forge, gradle_java: "21", optional: true }
+          - { minecraft: "26.3", loader: fabric, gradle_java: "25", optional: false }
+          - { minecraft: "26.3", loader: neoforge, gradle_java: "25", optional: true }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: |
+            17
+            21
+            ${{ matrix.gradle_java }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Install Xvfb and Mesa
-        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0 mesa-utils
-      - run: chmod +x gradlew
-      - name: Launch the client, screenshot every themed screen and quit
-        timeout-minutes: 30
+      - run: chmod +x ${{ matrix.minecraft }}/gradlew scripts/server-smoke-test.sh
+      - name: Start a dev server with the mod
+        timeout-minutes: 25
+        env:
+          GRADLE_JAVA: ${{ matrix.gradle_java }}
         run: |
-          xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX +extension RENDER" sh -c 'glxinfo -B | head -20; ./gradlew runSnapshots --stacktrace'
-      - name: Check the screenshots and the log
-        run: |
-          set -e
-          ls -la run/screenshots || true
-          n=$(ls run/screenshots/pinkified_*.png 2>/dev/null | wc -l)
-          echo "$n snapshot screenshots"
-          [ ! -d run/crash-reports ] || { head -150 run/crash-reports/*.txt; exit 1; }
-          [ "$n" -ge 31 ] || { echo "Expected 31 snapshot screenshots"; exit 1; }
-          grep -q "\[devshots\] finished, quitting" run/logs/latest.log || { echo "The snapshot harness did not finish"; exit 1; }
-          if grep -E "ERROR|Exception|Caused by" run/logs/latest.log | grep -E 'com.sugarplumstudios|pinkified([^-.a-z]|$)|devshots'; then echo "The log has errors naming Pinkified"; exit 1; fi
-      - name: Errors in the log
-        if: always()
-        run: grep -n -E "ERROR|Exception|Caused by|at com\.sugarplum" run/logs/latest.log | head -200 || true
+          var="JAVA_HOME_${GRADLE_JAVA}_X64"
+          export JAVA_HOME="${!var}"
+          scripts/server-smoke-test.sh ${{ matrix.minecraft }} ${{ matrix.loader }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: client-test
+          name: server-smoke-${{ matrix.minecraft }}-${{ matrix.loader }}
           path: |
-            run/screenshots/**
-            run/logs/latest.log
-            run/crash-reports/**
+            server-smoke-*.log
+            ${{ matrix.minecraft }}/${{ matrix.loader }}/runs/server/logs/**
+            ${{ matrix.minecraft }}/${{ matrix.loader }}/runs/server/crash-reports/**
           if-no-files-found: ignore
+
+  client-test:
+    name: Client launch test, ${{ matrix.loader }} 1.20.1
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        loader: [forge, fabric]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Xvfb and Mesa
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0 mesa-utils
+      - run: chmod +x 1.20.1/gradlew
+      - name: Launch the client, screenshot every themed screen and quit
+        timeout-minutes: 30
+        working-directory: 1.20.1
+        run: |
+          xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX +extension RENDER" sh -c 'glxinfo -B | head -20; ./gradlew :${{ matrix.loader }}:runSnapshots --stacktrace -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64'
+      - name: Check the screenshots and the log
+        working-directory: 1.20.1/${{ matrix.loader }}/runs/snapshots
+        run: |
+          set -e
+          ls -la screenshots || true
+          n=$(ls screenshots/pinkified_*.png 2>/dev/null | wc -l)
+          echo "$n snapshot screenshots"
+          [ ! -d crash-reports ] || { head -150 crash-reports/*.txt; exit 1; }
+          [ "$n" -ge 31 ] || { echo "Expected 31 snapshot screenshots"; exit 1; }
+          grep -q "\[devshots\] finished, quitting" logs/latest.log || { echo "The snapshot harness did not finish"; exit 1; }
+          if grep -E "ERROR|Exception|Caused by" logs/latest.log | grep -E 'com.sugarplumstudios|pinkified([^-.a-z]|$)|devshots'; then echo "The log has errors naming Pinkified"; exit 1; fi
+      - name: Errors in the log
+        if: always()
+        run: grep -n -E "ERROR|Exception|Caused by|at com\.sugarplum|[Mm]ixin" 1.20.1/${{ matrix.loader }}/runs/snapshots/logs/latest.log | head -200 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-test-${{ matrix.loader }}
+          path: |
+            1.20.1/${{ matrix.loader }}/runs/snapshots/screenshots/**
+            1.20.1/${{ matrix.loader }}/runs/snapshots/logs/latest.log
+            1.20.1/${{ matrix.loader }}/runs/snapshots/crash-reports/**
+          if-no-files-found: ignore
+
+  # TEMPORARY: prints the signatures of the game and loader classes the ports use (no local JDK 25 / game jars).
+  api-probe:
+    name: API probe ${{ matrix.dir }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { dir: "1.21.1", java: "21" }
+          - { dir: "26.2", java: "25" }
+          - { dir: "26.3", java: "25" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+            ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up the game jars
+        working-directory: ${{ matrix.dir }}
+        env:
+          GJ: ${{ matrix.java }}
+        run: |
+          chmod +x gradlew
+          var="JAVA_HOME_${GJ}_X64"; export JAVA_HOME="${!var}"
+          ./gradlew :fabric:compileJava :neoforge:compileJava --continue -q 2>&1 | tail -5 || true
+      - name: Print class signatures
+        env:
+          GJ: ${{ matrix.java }}
+        run: |
+          var="JAVA_HOME_${GJ}_X64"; export JAVA_HOME="${!var}"
+          python3 - <<'PY'
+          import os, subprocess, zipfile
+          names = """GuiGraphicsExtractor GuiGraphics Screen TitleScreen DeathScreen PauseScreen AbstractContainerScreen TooltipRenderUtil
+          AbstractWidget AbstractButton Button AbstractSliderButton AbstractSelectionList ObjectSelectionList Renderable
+          GuiEventListener SplashRenderer LogoRenderer Gui Hud DebugScreenOverlay WidgetSprites AbstractScrollArea
+          DynamicTexture AbstractTexture TextureManager TextureAtlas TextureAtlasSprite SpriteContents MissingTextureAtlasSprite
+          SpriteId AtlasManager AtlasIds NativeImage SingleQuadParticle Particle ParticleProvider SpriteSet ParticleEngine
+          TextureSheetParticle ParticleRenderType SoundManager SoundEngine MusicManager SimpleSoundInstance SoundInstance
+          KeyMapping Minecraft RenderPipelines MouseButtonEvent KeyEvent InputWithModifiers GpuDevice CommandEncoder
+          GpuTexture RenderSystem Music Musics ResourceManager Identifier ResourceLocation InputConstants
+          ScreenEvent RenderTooltipEvent ContainerScreenEvent RenderGuiLayerEvent RegisterGuiLayersEvent VanillaGuiLayers
+          PlaySoundEvent RegisterParticleProvidersEvent AddClientReloadListenersEvent RegisterClientReloadListenersEvent
+          RegisterKeyMappingsEvent ClientTickEvent IConfigScreenFactory ModListScreen BrandingControl KeyConflictContext
+          TextureAtlasStitchedEvent ScreenEvents Screens HudElementRegistry VanillaHudElements HudElement HudLayerRegistrationCallback
+          KeyMappingHelper KeyBindingHelper ParticleProviderRegistry ParticleFactoryRegistry ResourceLoader ResourceManagerHelper
+          ClientTickEvents ScreenMouseEvents IdentifiableResourceReloadListener PreparableReloadListener ResourceManagerReloadListener""".split()
+          want = set(names)
+          roots = [os.path.expanduser('~/.gradle'), os.getcwd()]
+          jars = []
+          for r in roots:
+              for dp, dn, fn in os.walk(r):
+                  for f in fn:
+                      if f.endswith('.jar') and ('-sources' not in f):
+                          p = os.path.join(dp, f)
+                          if any(k in p for k in ('minecraft', 'neoforge', 'fabric', 'blaze3d', 'renderpearl', 'mojang')):
+                              jars.append(p)
+          print(len(jars), 'jars'); seen = {}
+          for j in sorted(jars, key=lambda p: -os.path.getsize(p)):
+              try:
+                  z = zipfile.ZipFile(j)
+              except Exception:
+                  continue
+              for n in z.namelist():
+                  if not n.endswith('.class'):
+                      continue
+                  base = n.rsplit('/', 1)[-1][:-6]
+                  outer = base.split('$')[0]
+                  if outer in want and n not in seen and not n.startswith('META-INF'):
+                      seen[n] = j
+          by_cls = sorted(seen.items())
+          print(len(by_cls), 'classes')
+          for n, j in by_cls:
+              cls = n[:-6].replace('/', '.')
+              out = subprocess.run([os.path.join(os.environ['JAVA_HOME'], 'bin', 'javap'), '-p', '-cp', j, cls],
+                                   capture_output=True, text=True).stdout
+              print('=== ' + cls + '  [' + os.path.basename(j) + ']')
+              print(out)
+          PY

@@ -1,0 +1,31 @@
+{
+    "schemaVersion": 1,
+    "id": "${mod_id}",
+    "version": "${version}",
+    "name": "${mod_name}",
+    "description": "${description}",
+    "authors": [
+        "${mod_author}"
+    ],
+    "contact": {
+        "sources": "https://github.com/MeherBenSalem/pinkified-minecraft",
+        "issues": "https://github.com/sugarplum-studios/pinkified-minecraft/issues"
+    },
+    "license": "${license}",
+    "icon": "pinkified_logo.png",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "com.sugarplumstudios.pinkified.fabric.PinkifiedFabric"
+        ]
+    },
+    "mixins": [
+        "pinkified.fabric.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=${fabric_loader_version}",
+        "fabric-api": "*",
+        "minecraft": "${minecraft_version}",
+        "java": ">=${java_version}"
+    }
+}

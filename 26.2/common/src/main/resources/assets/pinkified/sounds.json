@@ -1,0 +1,20 @@
+{
+  "music.menu": {
+    "sounds": [
+      {
+        "name": "pinkified:music/sugarplum_lullaby",
+        "stream": true
+      }
+    ]
+  },
+  "ui.click": {
+    "sounds": [
+      "pinkified:ui/click"
+    ]
+  },
+  "ui.chime": {
+    "sounds": [
+      "pinkified:ui/chime"
+    ]
+  }
+}

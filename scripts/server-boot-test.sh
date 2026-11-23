@@ -7,8 +7,8 @@
 set -u
 JAR="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-MC=$(grep '^minecraft_version=' "$ROOT/gradle.properties" | cut -d= -f2)
-FORGE=$(grep '^forge_version=' "$ROOT/gradle.properties" | cut -d= -f2)
+MC=$(grep '^minecraft_version=' "$ROOT/1.20.1/gradle.properties" | cut -d= -f2)
+FORGE=$(grep '^forge_version=' "$ROOT/1.20.1/gradle.properties" | cut -d= -f2)
 SERVER="$ROOT/build/boot-test-server"
 rm -rf "$SERVER"; mkdir -p "$SERVER/mods"
 cd "$SERVER"

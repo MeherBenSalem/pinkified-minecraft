@@ -134,7 +134,7 @@ Everything is on by default.
 | --- | --- | --- | --- |
 | 1.20.1 | Forge 47 or newer | 17+ | Nothing |
 
-- Install Pinkified on **your client only**: it is required on the client and unsupported on the server.
+- Install Pinkified on **your client only**. Servers don't need it.
 - **Resource packs:** Pinkified recolours whatever GUI textures your active packs provide. Turn off the matching settings to see a pack's art unchanged.
 - **HUD mods** such as AppleSkin keep working, because hearts and food are themed through textures.
 - **Mods that add buttons to the title screen:** those buttons don't appear on the Pinkified main menu. Turn off *Pinkified main menu* to keep the vanilla title screen, which is still recoloured.
@@ -169,9 +169,7 @@ No. They're only drawn on your screen.
 **Is there a Fabric or NeoForge version?**
 Not yet. Pinkified runs on Forge for Minecraft 1.20.1.
 
-![Gallery](https://raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/header-gallery.png)
-
-More screenshots of every theme, the HUD, the inventories, the menus and the settings are in this project's **Gallery** tab.
+More screenshots are in this project's **Gallery** tab.
 
 ---
 
