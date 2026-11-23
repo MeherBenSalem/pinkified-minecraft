@@ -1,37 +1,39 @@
 package com.sugarplumstudios.pinkified.client.texture;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import com.sugarplumstudios.pinkified.client.particle.ParticleSprites;
 import com.sugarplumstudios.pinkified.client.theme.Themes;
 import com.sugarplumstudios.pinkified.client.util.Colors;
 import com.sugarplumstudios.pinkified.client.util.Ids;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Themes sprites of the GUI atlas (buttons, sliders, container parts, HUD icons) and the mob-effect atlas in place.
+ * Themes sprites of the GUI atlas (buttons, sliders, container parts, HUD icons, mob-effect icons) in place.
  * The original pixels are read from the resource packs, and the themed ones are written over each sprite's spot in
  * the stitched atlas, so switching themes needs no resource reload. The atlases are watched every client tick: when
  * a reload stitched them again, the sprites are read and themed again.
  */
 public final class GuiSpriteThemer {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Identifier GUI_ATLAS = Ids.vanilla("textures/atlas/gui.png");
-    private static final Identifier EFFECT_ATLAS = Ids.vanilla("textures/atlas/mob_effects.png");
     private static final Identifier GUI_PROBE = Ids.vanilla("widget/button");
-    private static final Identifier EFFECT_PROBE = Ids.vanilla("speed");
+    private static final Identifier EFFECT_PROBE = Ids.vanilla("mob_effect/speed");
     private static final Identifier PARTICLE_PROBE = Ids.vanilla("heart");
 
     private record Entry(TextureAtlas atlas, Identifier sprite, String path, Canvas original, boolean effect) {
@@ -51,9 +53,10 @@ public final class GuiSpriteThemer {
 
     @SuppressWarnings("ConstantConditions")
     public static void tick() {
-        TextureAtlas gui = atlas(GUI_ATLAS);
-        TextureAtlas effects = atlas(EFFECT_ATLAS);
-        TextureAtlas particles = atlas(TextureAtlas.LOCATION_PARTICLES);
+        TextureAtlas gui = atlas(AtlasIds.GUI);
+        // mob effect icons are stitched into the GUI atlas (as mob_effect/<name>)
+        TextureAtlas effects = gui;
+        TextureAtlas particles = atlas(AtlasIds.PARTICLES);
         Object g = gui == null ? null : gui.getSprite(GUI_PROBE);
         Object e = effects == null ? null : effects.getSprite(EFFECT_PROBE);
         Object pt = particles == null ? null : particles.getSprite(PARTICLE_PROBE);
@@ -70,8 +73,11 @@ public final class GuiSpriteThemer {
     }
 
     private static TextureAtlas atlas(Identifier id) {
-        AbstractTexture t = Minecraft.getInstance().getTextureManager().getTexture(id, null);
-        return t instanceof TextureAtlas a ? a : null;
+        try {
+            return Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(id);
+        } catch (RuntimeException notLoadedYet) {
+            return null;
+        }
     }
 
     private static void capture(ResourceManager rm, TextureAtlas gui, TextureAtlas effects) {
@@ -90,7 +96,7 @@ public final class GuiSpriteThemer {
                 Identifier file = r.getKey();
                 if (!file.getNamespace().equals("minecraft")) continue;
                 String path = file.getPath().substring("textures/mob_effect/".length(), file.getPath().length() - 4);
-                add(effects, Ids.vanilla(path), path, r.getValue(), true);
+                add(effects, Ids.vanilla("mob_effect/" + path), path, r.getValue(), true);
             }
         }
     }
@@ -104,7 +110,7 @@ public final class GuiSpriteThemer {
             if (img.getWidth() != w || img.getHeight() != h) return;
             Canvas c = new Canvas(w, h);
             for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++) c.px[y * w + x] = Colors.fromAbgr(img.getPixelRGBA(x, y));
+                for (int x = 0; x < w; x++) c.px[y * w + x] = img.getPixel(x, y);
             entries.add(new Entry(atlas, id, path, c, effect));
         } catch (Exception ex) {
             LOGGER.debug("Pinkified could not read sprite {}", id, ex);
@@ -126,12 +132,20 @@ public final class GuiSpriteThemer {
         }
     }
 
+    private static ByteBuffer staging;
+
+    /** Writes the ARGB canvas over the sprite's spot in the atlas texture (RGBA8, so the ints are stored as ABGR). */
     private static void write(TextureAtlas atlas, TextureAtlasSprite sprite, Canvas c) {
-        try (NativeImage img = new NativeImage(c.width, c.height, false)) {
-            for (int y = 0; y < c.height; y++)
-                for (int x = 0; x < c.width; x++) img.setPixelRGBA(x, y, Colors.toAbgr(c.px[y * c.width + x]));
-            atlas.bind();
-            img.upload(0, sprite.getX(), sprite.getY(), 0, 0, c.width, c.height, false, false, false, false);
+        int bytes = c.width * c.height * 4;
+        if (staging == null || staging.capacity() < bytes) {
+            if (staging != null) MemoryUtil.memFree(staging);
+            staging = MemoryUtil.memAlloc(Math.max(bytes, 64 * 64 * 4));
         }
+        staging.clear();
+        IntBuffer ints = staging.asIntBuffer();
+        for (int i = 0; i < c.width * c.height; i++) ints.put(Colors.toAbgr(c.px[i]));
+        staging.limit(bytes);
+        RenderSystem.getDevice().createCommandEncoder()
+                .writeToTexture(atlas.getTexture(), staging, 0, 0, sprite.getX(), sprite.getY(), c.width, c.height);
     }
 }

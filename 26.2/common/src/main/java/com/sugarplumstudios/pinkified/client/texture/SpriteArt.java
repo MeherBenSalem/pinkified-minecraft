@@ -1,7 +1,9 @@
 package com.sugarplumstudios.pinkified.client.texture;
 
+import com.sugarplumstudios.pinkified.client.config.PinkConfig;
 import com.sugarplumstudios.pinkified.client.theme.FoodStyle;
 import com.sugarplumstudios.pinkified.client.theme.Palette;
+import com.sugarplumstudios.pinkified.client.util.Colors;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -87,6 +89,7 @@ public final class SpriteArt {
     /** True for every sprite path this class may change (the others are never read). */
     public static boolean handles(String path) {
         if (CELLS.containsKey(path) || path.startsWith("hud/") || path.startsWith("mob_effect/")) return true;
+        if (path.equals("tooltip/background") || path.equals("tooltip/frame")) return true;
         for (String prefix : WIDGET_PREFIXES) if (path.startsWith(prefix)) return true;
         for (String prefix : CONTAINER_PREFIXES) if (path.startsWith(prefix)) return true;
         return false;
@@ -124,6 +127,7 @@ public final class SpriteArt {
 
         /** The themed sprite, or null to keep the original pixels. */
         public Canvas process(String path, Canvas src) {
+            if (path.equals("tooltip/background") || path.equals("tooltip/frame")) return tooltip(src, path.endsWith("frame"));
             Cell cell = CELLS.get(path);
             if (cell != null) return cut(cell, src);
             if (path.equals("hud/hotbar") || path.startsWith("hud/hotbar_offhand")) {
@@ -186,6 +190,26 @@ public final class SpriteArt {
             Canvas out = new Canvas(src.width, src.height);
             for (int y = 0; y < src.height; y++)
                 System.arraycopy(sheet.px, (cell.y() * s + y) * sheet.width + cell.x() * s, out.px, y * out.width, src.width);
+            return out;
+        }
+
+        /**
+         * Default item tooltips (since 1.21.2 drawn from these two sprites): the background in the theme's tooltip
+         * colour, the frame as a gradient from its top to its bottom colour. Tooltips with their own style keep it.
+         */
+        private Canvas tooltip(Canvas src, boolean frame) {
+            if (!PinkConfig.on(PinkConfig.THEME_TOOLTIPS)) return null;
+            Canvas out = src.copy();
+            for (int y = 0; y < src.height; y++) {
+                float t = src.height <= 1 ? 0f : y / (float) (src.height - 1);
+                int rgb = frame ? Colors.lerp(p.tooltipBorderTop, p.tooltipBorderBottom, t)
+                        : Colors.lerp(p.tooltipBg, Colors.lerp(p.tooltipBg, p.deep, 0.3f), t);
+                for (int x = 0; x < src.width; x++) {
+                    int a = src.px[y * src.width + x] >>> 24;
+                    if (a == 0) continue;
+                    out.px[y * src.width + x] = ((frame ? 0xD0 : a) << 24) | (rgb & 0xFFFFFF);
+                }
+            }
             return out;
         }
 

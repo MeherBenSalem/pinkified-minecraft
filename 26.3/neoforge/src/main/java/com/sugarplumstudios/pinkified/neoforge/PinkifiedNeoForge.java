@@ -19,14 +19,12 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.ContainerScreenEvent;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
-import net.neoforged.neoforge.client.event.RenderTooltipEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.event.sound.PlaySoundEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -44,7 +42,7 @@ public final class PinkifiedNeoForge {
         container.registerExtensionPoint(IConfigScreenFactory.class, (mod, parent) -> new PinkSettingsScreen(parent));
 
         modBus.addListener(FMLClientSetupEvent.class, event -> event.enqueueWork(Themes::refresh));
-        modBus.addListener(RegisterClientReloadListenersEvent.class, event -> event.registerReloadListener(ThemedTextures.INSTANCE));
+        modBus.addListener(AddClientReloadListenersEvent.class, event -> event.addListener(Ids.mod("themed_textures"), ThemedTextures.INSTANCE));
         modBus.addListener(RegisterGuiLayersEvent.class, event -> {
             event.registerAbove(VanillaGuiLayers.CROSSHAIR, Ids.mod("crosshair"),
                     (g, delta) -> HudHooks.renderCrosshair(g, g.guiWidth(), g.guiHeight()));
@@ -53,7 +51,10 @@ public final class PinkifiedNeoForge {
         });
         modBus.addListener(RegisterParticleProvidersEvent.class,
                 event -> event.registerSpriteSet(ParticleTypes.ENCHANT, PinkEnchantParticle.Provider::new));
-        modBus.addListener(RegisterKeyMappingsEvent.class, event -> event.register(PinkifiedClient.OPEN_SETTINGS));
+        modBus.addListener(RegisterKeyMappingsEvent.class, event -> {
+            event.registerCategory(PinkifiedClient.KEY_CATEGORY);
+            event.register(PinkifiedClient.OPEN_SETTINGS);
+        });
 
         IEventBus bus = NeoForge.EVENT_BUS;
         bus.addListener(EventPriority.LOW, false, ScreenEvent.Opening.class, event -> {
@@ -61,26 +62,11 @@ public final class PinkifiedNeoForge {
             if (next != event.getNewScreen()) event.setNewScreen(next);
         });
         bus.addListener(ScreenEvent.Init.Post.class, event -> ScreenHooks.onInit(event.getScreen(), event::addListener));
-        bus.addListener(ScreenEvent.BackgroundRendered.class,
+        // fires right after a screen drew its default background (container decorations and the game-over screen are
+        // the shared mixins in pinkified.mixins.json)
+        bus.addListener(ScreenEvent.Render.Background.class,
                 event -> ScreenHooks.onBackgroundRendered(event.getScreen(), event.getGuiGraphics()));
-        bus.addListener(ContainerScreenEvent.Render.Background.class,
-                event -> ScreenHooks.onContainerBackground(event.getContainerScreen(), event.getGuiGraphics()));
-        bus.addListener(ScreenEvent.Render.Pre.class, event -> {
-            if (ScreenHooks.onRenderPre(event.getScreen(), event.getGuiGraphics(), event.getMouseX(), event.getMouseY(),
-                    event.getPartialTick())) {
-                event.setCanceled(true);
-            }
-        });
         bus.addListener(ScreenEvent.Render.Post.class, event -> ScreenHooks.onRenderPost(event.getScreen(), event.getGuiGraphics()));
-        bus.addListener(EventPriority.HIGH, false, RenderTooltipEvent.Color.class, event -> {
-            ScreenHooks.TooltipColors c = ScreenHooks.tooltipColors(event.getOriginalBackgroundStart(),
-                    event.getOriginalBorderStart(), event.getOriginalBorderEnd());
-            if (c == null) return;
-            event.setBackgroundStart(c.backgroundStart());
-            event.setBackgroundEnd(c.backgroundEnd());
-            event.setBorderStart(c.borderStart());
-            event.setBorderEnd(c.borderEnd());
-        });
         // remembers whether another mod hid the vanilla element, so ours stays hidden too
         bus.addListener(EventPriority.LOWEST, true, RenderGuiLayerEvent.Pre.class, event -> {
             if (event.getName().equals(VanillaGuiLayers.CROSSHAIR)) HudHooks.setCrosshairCancelled(event.isCanceled());

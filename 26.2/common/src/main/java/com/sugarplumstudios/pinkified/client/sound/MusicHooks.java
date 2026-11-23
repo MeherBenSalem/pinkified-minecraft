@@ -28,7 +28,7 @@ public final class MusicHooks {
     @Nullable
     public static SoundInstance onPlaySound(@Nullable SoundInstance sound) {
         if (sound == null || sound == current || sound.getSource() != SoundSource.MUSIC) return sound;
-        if (!VANILLA_MENU.equals(sound.getLocation()) || !PinkConfig.on(PinkConfig.MENU_MUSIC)) return sound;
+        if (!VANILLA_MENU.equals(sound.getIdentifier()) || !PinkConfig.on(PinkConfig.MENU_MUSIC)) return sound;
         SoundManager sm = Minecraft.getInstance().getSoundManager();
         if (current != null && sm.isActive(current)) return null;
         current = SimpleSoundInstance.forMusic(PinkSounds.MENU_MUSIC);

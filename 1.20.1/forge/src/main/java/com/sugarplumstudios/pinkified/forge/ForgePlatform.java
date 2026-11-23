@@ -3,6 +3,7 @@ package com.sugarplumstudios.pinkified.forge;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.sugarplumstudios.pinkified.platform.PinkPlatform;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.client.gui.ModListScreen;
@@ -54,5 +55,10 @@ public final class ForgePlatform implements PinkPlatform {
     @Override
     public void forEachAboveCopyrightLine(BiConsumer<Integer, String> consumer) {
         BrandingControl.forEachAboveCopyrightLine(consumer);
+    }
+
+    @Override
+    public int[] listBounds(AbstractSelectionList<?> list) {
+        return new int[]{list.getLeft(), list.getRight(), list.getTop(), list.getBottom()};
     }
 }

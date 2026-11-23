@@ -8,6 +8,7 @@ import com.sugarplumstudios.pinkified.client.particle.PinkEnchantParticle;
 import com.sugarplumstudios.pinkified.client.sound.MusicHooks;
 import com.sugarplumstudios.pinkified.client.texture.ThemedTextures;
 import com.sugarplumstudios.pinkified.client.theme.Themes;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.particles.ParticleTypes;
@@ -67,7 +68,10 @@ final class PinkifiedForgeClient {
         bus.addListener(EventPriority.NORMAL, false, ScreenEvent.BackgroundRendered.class,
                 event -> ScreenHooks.onBackgroundRendered(event.getScreen(), event.getGuiGraphics()));
         bus.addListener(EventPriority.NORMAL, false, ContainerScreenEvent.Render.Background.class,
-                event -> ScreenHooks.onContainerBackground(event.getContainerScreen(), event.getGuiGraphics()));
+                event -> {
+                    AbstractContainerScreen<?> s = event.getContainerScreen();
+                    ScreenHooks.onContainerBackground(s, event.getGuiGraphics(), s.getGuiLeft(), s.getGuiTop(), s.getXSize(), s.getYSize());
+                });
         bus.addListener(EventPriority.NORMAL, false, ScreenEvent.Render.Pre.class, event -> {
             if (ScreenHooks.onRenderPre(event.getScreen(), event.getGuiGraphics(), event.getMouseX(), event.getMouseY(),
                     event.getPartialTick())) {

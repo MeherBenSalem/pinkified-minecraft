@@ -1,13 +1,14 @@
 package com.sugarplumstudios.pinkified.client.gui;
 
 import net.minecraft.client.renderer.RenderPipelines;
-import com.mojang.math.Axis;
 import com.sugarplumstudios.pinkified.client.util.Colors;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 
 /** Drawing helpers for Pinkified's rounded, pastel interface elements. */
 public final class RenderKit {
@@ -83,9 +84,8 @@ public final class RenderKit {
     /** Draws a whole texture at its natural size, tinted (RGB) and faded (alpha). */
     public static void sprite(GuiGraphicsExtractor g, Identifier tex, int x, int y, int w, int h, int tint, float alpha) {
         if (alpha <= 0.003f) return;
-        g.setColor(Colors.red(tint) / 255f, Colors.green(tint) / 255f, Colors.blue(tint) / 255f, alpha);
-        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0, 0, w, h, w, h);
-        g.setColor(1f, 1f, 1f, 1f);
+        int a = Math.round(Math.min(1f, alpha) * 255f);
+        g.blit(RenderPipelines.GUI_TEXTURED, tex, x, y, 0f, 0f, w, h, w, h, (a << 24) | (tint & 0xFFFFFF));
     }
 
     /** Sprite centred on (cx, cy), rotated by {@code degrees} and scaled. */
@@ -122,5 +122,58 @@ public final class RenderKit {
         RenderKit.drawString(g, font, s, x, y + 1, outline, false);
         RenderKit.drawString(g, font, s, x, y - 1, outline, false);
         RenderKit.drawString(g, font, s, x, y, color, false);
+    }
+
+    /** Text colours without an alpha byte were drawn opaque before 1.21.6; keep that. */
+    public static int opaque(int color) {
+        return (color & 0xFC000000) == 0 ? color | 0xFF000000 : color;
+    }
+
+    public static void drawString(GuiGraphicsExtractor g, Font font, String s, int x, int y, int color, boolean shadow) {
+        g.text(font, s, x, y, opaque(color), shadow);
+    }
+
+    public static void drawString(GuiGraphicsExtractor g, Font font, Component s, int x, int y, int color, boolean shadow) {
+        g.text(font, s, x, y, opaque(color), shadow);
+    }
+
+    public static void drawString(GuiGraphicsExtractor g, Font font, FormattedCharSequence s, int x, int y, int color, boolean shadow) {
+        g.text(font, s, x, y, opaque(color), shadow);
+    }
+
+    public static void drawString(GuiGraphicsExtractor g, Font font, String s, int x, int y, int color) {
+        drawString(g, font, s, x, y, color, true);
+    }
+
+    public static void drawString(GuiGraphicsExtractor g, Font font, Component s, int x, int y, int color) {
+        drawString(g, font, s, x, y, color, true);
+    }
+
+    public static void drawCenteredString(GuiGraphicsExtractor g, Font font, Component s, int cx, int y, int color) {
+        g.centeredText(font, s, cx, y, opaque(color));
+    }
+
+    public static void drawCenteredString(GuiGraphicsExtractor g, Font font, String s, int cx, int y, int color) {
+        g.centeredText(font, s, cx, y, opaque(color));
+    }
+
+    /** Vanilla's scrolling widget label: centred when it fits, otherwise it slides back and forth inside the box. */
+    public static void scrollingText(GuiGraphicsExtractor g, Font font, Component text, int minX, int minY, int maxX, int maxY, int color) {
+        int tw = font.width(text);
+        int y = (minY + maxY - 9) / 2 + 1;
+        int avail = maxX - minX;
+        if (tw > avail) {
+            int over = tw - avail;
+            double seconds = Util.getMillis() / 1000.0;
+            double period = Math.max(over * 0.5, 3.0);
+            double f = Math.sin(Math.PI / 2 * Math.cos(Math.PI * 2 * seconds / period)) / 2 + 0.5;
+            double offset = Mth.lerp(f, 0.0, over);
+            g.enableScissor(minX, minY, maxX, maxY);
+            g.text(font, text, minX - (int) offset, y, opaque(color), true);
+            g.disableScissor();
+        } else {
+            int cx = Mth.clamp((minX + maxX) / 2, minX + tw / 2, maxX - tw / 2);
+            g.centeredText(font, text, cx, y, opaque(color));
+        }
     }
 }

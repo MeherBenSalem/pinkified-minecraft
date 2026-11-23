@@ -17,10 +17,10 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.screens.AccessibilityOptionsScreen;
+import net.minecraft.client.gui.screens.options.AccessibilityOptionsScreen;
 import net.minecraft.client.gui.screens.CreditsAndAttributionScreen;
-import net.minecraft.client.gui.screens.LanguageSelectScreen;
-import net.minecraft.client.gui.screens.OptionsScreen;
+import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.multiplayer.SafetyScreen;
@@ -69,44 +69,44 @@ public class PinkTitleScreen extends Screen {
         Tooltip mpTooltip = mpDisabled != null ? Tooltip.create(mpDisabled) : null;
 
         addRenderableWidget(new PinkButton(cx - bw / 2, top, bw, 20, Component.translatable("menu.singleplayer"),
-                b -> minecraft.setScreen(new SelectWorldScreen(this))).entrance(d, -40));
+                b -> minecraft.gui.setScreen(new SelectWorldScreen(this))).entrance(d, -40));
         PinkButton mp = addRenderableWidget(new PinkButton(cx - bw / 2, top + gap, bw, 20, Component.translatable("menu.multiplayer"),
-                b -> minecraft.setScreen(minecraft.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this)))
+                b -> minecraft.gui.setScreen(minecraft.options.skipMultiplayerWarning ? new JoinMultiplayerScreen(this) : new SafetyScreen(this)))
                 .entrance(d * 2, 40));
         mp.active = mpDisabled == null;
         mp.setTooltip(mpTooltip);
         Component modsLabel = Services.PLATFORM.modsButtonLabel();
         PinkButton realms = addRenderableWidget(new PinkButton(cx - bw / 2, top + gap * 2, modsLabel != null ? 98 : bw, 20,
-                Component.translatable("menu.online"), b -> minecraft.setScreen(new RealmsMainScreen(this))).entrance(d * 3, -40));
+                Component.translatable("menu.online"), b -> minecraft.gui.setScreen(new RealmsMainScreen(this))).entrance(d * 3, -40));
         realms.active = mpDisabled == null;
         realms.setTooltip(mpTooltip);
         if (modsLabel != null) {
             addRenderableWidget(new PinkButton(cx + 2, top + gap * 2, 98, 20, modsLabel, b -> {
                 Screen mods = Services.PLATFORM.modListScreen(this);
-                if (mods != null) minecraft.setScreen(mods);
+                if (mods != null) minecraft.gui.setScreen(mods);
             }).entrance(d * 3, 40));
         }
         addRenderableWidget(new PinkButton(cx - bw / 2, top + gap * 3 + 8, 98, 20, Component.translatable("menu.options"),
-                b -> minecraft.setScreen(new OptionsScreen(this, minecraft.options))).entrance(d * 4, -40));
+                b -> minecraft.gui.setScreen(new OptionsScreen(this, minecraft.options))).entrance(d * 4, -40));
         addRenderableWidget(new PinkButton(cx + 2, top + gap * 3 + 8, 98, 20, Component.translatable("menu.quit"),
                 b -> minecraft.stop()).entrance(d * 4, 40));
 
         int iy = top + gap * 3 + 8;
         PinkButton lang = addRenderableWidget(new PinkButton(cx - bw / 2 - 24, iy, 20, 20, Component.empty(), PinkTextures.LANGUAGE,
-                b -> minecraft.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager())))
+                b -> minecraft.gui.setScreen(new LanguageSelectScreen(this, minecraft.options, minecraft.getLanguageManager())))
                 .entrance(d * 5, -30));
         lang.setTooltip(Tooltip.create(Component.translatable("narrator.button.language")));
         PinkButton access = addRenderableWidget(new PinkButton(cx + bw / 2 + 4, iy, 20, 20, Component.empty(), PinkTextures.ACCESSIBILITY,
-                b -> minecraft.setScreen(new AccessibilityOptionsScreen(this, minecraft.options))).entrance(d * 5, 30));
+                b -> minecraft.gui.setScreen(new AccessibilityOptionsScreen(this, minecraft.options))).entrance(d * 5, 30));
         access.setTooltip(Tooltip.create(Component.translatable("narrator.button.accessibility")));
         PinkButton settings = addRenderableWidget(new PinkButton(cx + bw / 2 + 4, top + gap * 2, 20, 20, Component.empty(), PinkTextures.HEART_BUTTON,
-                b -> minecraft.setScreen(new PinkSettingsScreen(this))).entrance(d * 6, 30));
+                b -> minecraft.gui.setScreen(new PinkSettingsScreen(this))).entrance(d * 6, 30));
         settings.setTooltip(Tooltip.create(Component.translatable("pinkified.settings.open")));
 
         Component copyright = COPYRIGHT_TEXT;
         int cw = font.width(copyright);
         addRenderableWidget(new PlainTextButton(width - cw - 2, height - 10, cw, 10, copyright,
-                b -> minecraft.setScreen(new CreditsAndAttributionScreen(this)), font));
+                b -> minecraft.gui.setScreen(new CreditsAndAttributionScreen(this)), font));
     }
 
     @Nullable

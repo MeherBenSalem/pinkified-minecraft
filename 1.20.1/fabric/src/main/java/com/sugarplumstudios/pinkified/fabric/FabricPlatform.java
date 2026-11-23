@@ -1,11 +1,13 @@
 package com.sugarplumstudios.pinkified.fabric;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.sugarplumstudios.pinkified.fabric.mixin.AbstractSelectionListAccessor;
 import com.sugarplumstudios.pinkified.platform.PinkPlatform;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
@@ -72,5 +74,11 @@ public final class FabricPlatform implements PinkPlatform {
 
     @Override
     public void forEachAboveCopyrightLine(BiConsumer<Integer, String> consumer) {
+    }
+
+    @Override
+    public int[] listBounds(AbstractSelectionList<?> list) {
+        AbstractSelectionListAccessor a = (AbstractSelectionListAccessor) list;
+        return new int[]{a.pinkified$x0(), a.pinkified$x1(), a.pinkified$y0(), a.pinkified$y1()};
     }
 }

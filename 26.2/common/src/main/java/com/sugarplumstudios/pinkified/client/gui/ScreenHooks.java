@@ -37,7 +37,7 @@ import java.util.function.Consumer;
 /**
  * Screen-level styling that works with any screen, vanilla or modded, through the loader's screen
  * events (Forge events, or Fabric API events and a few mixins): the pastel main menu, menu backdrops, list panels, pause-menu button, container
- * decorations, the game-over screen, soft transitions and tooltip colours.
+ * decorations, the game-over screen and soft transitions. Tooltips are themed through their sprites (SpriteArt).
  */
 public final class ScreenHooks {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -76,7 +76,7 @@ public final class ScreenHooks {
             if (anchor != null) {
                 int x = vanillaTitle ? anchor.getX() + anchor.getWidth() + 28 : anchor.getX() - 24;
                 PinkButton heart = new PinkButton(x, anchor.getY(), 20, 20, Component.empty(), PinkTextures.HEART_BUTTON,
-                        b -> Minecraft.getInstance().setScreen(new PinkSettingsScreen(screen)));
+                        b -> Minecraft.getInstance().gui.setScreen(new PinkSettingsScreen(screen)));
                 heart.setTooltip(Tooltip.create(Component.translatable("pinkified.settings.open")));
                 addWidget.accept(heart);
             }
@@ -98,6 +98,8 @@ public final class ScreenHooks {
     /** Right after a screen drew its default background. */
     public static void onBackgroundRendered(Screen screen, GuiGraphicsExtractor g) {
         if (!PinkConfig.on(PinkConfig.MENU_BACKGROUNDS)) return;
+        // the themed game-over screen draws its own backdrop
+        if (screen instanceof DeathScreen && PinkConfig.on(PinkConfig.THEME_DEATH_SCREEN)) return;
         if (Minecraft.getInstance().level == null) {
             MenuBackdrop.INSTANCE.renderMenu(g, screen.width, screen.height);
         } else {
@@ -118,11 +120,10 @@ public final class ScreenHooks {
 
     // ------------------------------------------------------------------ container decorations
 
-    /** Right after a container screen drew its background texture. */
-    public static void onContainerBackground(AbstractContainerScreen<?> screen, GuiGraphicsExtractor g) {
+    /** Right after a container screen drew its background texture (window at left, top, size w x h). */
+    public static void onContainerBackground(AbstractContainerScreen<?> screen, GuiGraphicsExtractor g, int left, int top, int w, int h) {
         if (!PinkConfig.on(PinkConfig.CONTAINER_DECORATIONS) || !PinkConfig.on(PinkConfig.THEME_CONTAINERS)) return;
         if (screen instanceof CreativeModeInventoryScreen) return;
-        int left = screen.getGuiLeft(), top = screen.getGuiTop(), w = screen.getXSize(), h = screen.getYSize();
         if (w < 80 || h < 60) return;
         Palette p = Themes.palette();
         float sway = Anim.intensity() > 0 ? (float) Math.sin(Anim.seconds() * 1.7f) * 4f * Math.min(1f, Anim.intensity()) : 0f;
@@ -147,13 +148,13 @@ public final class ScreenHooks {
     private static void resolveDeathFields() {
         if (fieldsResolved) return;
         fieldsResolved = true;
-        // DeathScreen has two Component fields: the final cause of death and the score line
+        // DeathScreen keeps the cause of death and the score line in two final Component fields
         for (Field f : DeathScreen.class.getDeclaredFields()) {
             if (f.getType() != Component.class || Modifier.isStatic(f.getModifiers())) continue;
             try {
                 f.setAccessible(true);
-                if (Modifier.isFinal(f.getModifiers())) causeField = f;
-                else scoreField = f;
+                if (f.getName().equals("causeOfDeath")) causeField = f;
+                else if (f.getName().equals("deathScore")) scoreField = f;
             } catch (RuntimeException e) {
                 LOGGER.debug("Pinkified could not access DeathScreen field {}", f.getName(), e);
             }
@@ -202,13 +203,6 @@ public final class ScreenHooks {
         if (cause != null) RenderKit.drawCenteredString(g, font, cause, w / 2, 85, 0xFFFFFF);
         Component score = read(scoreField, screen);
         if (score != null) RenderKit.drawCenteredString(g, font, score, w / 2, 100, 0xFFFFFF);
-        if (cause != null && mouseY > 85 && mouseY < 85 + font.lineHeight) {
-            int textW = font.width(cause);
-            int x0 = w / 2 - textW / 2;
-            if (mouseX >= x0 && mouseX <= x0 + textW) {
-                g.renderComponentHoverEffect(font, font.getSplitter().componentStyleAtWidth(cause, mouseX - x0), mouseX, mouseY);
-            }
-        }
         for (GuiEventListener child : screen.children()) {
             if (child instanceof Renderable r) r.extractRenderState(g, mouseX, mouseY, partialTick);
         }
@@ -224,42 +218,5 @@ public final class ScreenHooks {
         if (age < 0 || age > 260) return;
         float f = 1f - Anim.easeOutCubic(age / 260f);
         g.fill(0, 0, s.width, s.height, Colors.withAlpha(Themes.palette().skyBottom, f * 0.55f));
-    }
-
-    // ------------------------------------------------------------------ tooltips
-
-    private static final int VANILLA_TOOLTIP_BG = 0xF0100010;
-    private static final int VANILLA_BORDER_START = 0x505000FF;
-    private static final int VANILLA_BORDER_END = 0x5028007F;
-
-    /** Theme colours for a tooltip, or null to keep the given ones (custom colours from other mods are kept). */
-    @Nullable
-    public static TooltipColors tooltipColors(int backgroundStart, int borderStart, int borderEnd) {
-        if (!PinkConfig.on(PinkConfig.THEME_TOOLTIPS)) return null;
-        if (backgroundStart != VANILLA_TOOLTIP_BG || borderStart != VANILLA_BORDER_START || borderEnd != VANILLA_BORDER_END) {
-            return null;
-        }
-        Palette p = Themes.palette();
-        return new TooltipColors(Colors.withAlpha(p.tooltipBg, 0xF0),
-                Colors.withAlpha(Colors.lerp(p.tooltipBg, p.deep, 0.3f), 0xF0),
-                Colors.withAlpha(p.tooltipBorderTop, 0xD0),
-                Colors.withAlpha(p.tooltipBorderBottom, 0xB0));
-    }
-
-    /** Colours for the four tooltip gradients. */
-    public record TooltipColors(int backgroundStart, int backgroundEnd, int borderStart, int borderEnd) {
-    }
-
-    /** Vanilla's tooltip colours, as Forge reports them before any mod changed them. */
-    public static int vanillaBackground() {
-        return VANILLA_TOOLTIP_BG;
-    }
-
-    public static int vanillaBorderStart() {
-        return VANILLA_BORDER_START;
-    }
-
-    public static int vanillaBorderEnd() {
-        return VANILLA_BORDER_END;
     }
 }

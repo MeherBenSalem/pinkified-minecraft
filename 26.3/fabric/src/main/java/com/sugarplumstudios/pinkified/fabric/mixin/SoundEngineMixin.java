@@ -6,16 +6,15 @@ import net.minecraft.client.sounds.SoundEngine;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Forge's PlaySoundEvent: the menu music is swapped for the Sugarplum Lullaby. */
+/** NeoForge's PlaySoundEvent: the menu music is swapped for the Sugarplum Lullaby. */
 @Mixin(SoundEngine.class)
 public abstract class SoundEngineMixin {
     @Inject(method = "play", at = @At("HEAD"), cancellable = true)
-    private void pinkified$play(SoundInstance sound, CallbackInfo ci) {
+    private void pinkified$play(SoundInstance sound, CallbackInfoReturnable<SoundEngine.PlayResult> cir) {
         SoundInstance replacement = MusicHooks.onPlaySound(sound);
         if (replacement == sound) return;
-        ci.cancel();
-        if (replacement != null) ((SoundEngine) (Object) this).play(replacement);
+        cir.setReturnValue(replacement != null ? ((SoundEngine) (Object) this).play(replacement) : SoundEngine.PlayResult.NOT_STARTED);
     }
 }

@@ -7,21 +7,22 @@ import com.sugarplumstudios.pinkified.client.util.Colors;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
-import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
-import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.util.RandomSource;
 
 /**
  * The enchanting-table glyph particle, behaving exactly like vanilla's but tinted in the theme
  * colour when enabled. Registered as the provider for {@code minecraft:enchant}; with the option
  * off it uses vanilla's colours.
  */
-public class PinkEnchantParticle extends TextureSheetParticle {
+public class PinkEnchantParticle extends SingleQuadParticle {
     private final double xStart, yStart, zStart;
 
-    protected PinkEnchantParticle(ClientLevel level, double x, double y, double z, double xd, double yd, double zd) {
-        super(level, x, y, z);
+    protected PinkEnchantParticle(ClientLevel level, double x, double y, double z, double xd, double yd, double zd, TextureAtlasSprite sprite) {
+        super(level, x, y, z, sprite);
         this.xd = xd;
         this.yd = yd;
         this.zd = zd;
@@ -53,8 +54,8 @@ public class PinkEnchantParticle extends TextureSheetParticle {
     }
 
     @Override
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_OPAQUE;
+    protected Layer getLayer() {
+        return Layer.OPAQUE;
     }
 
     @Override
@@ -64,8 +65,8 @@ public class PinkEnchantParticle extends TextureSheetParticle {
     }
 
     @Override
-    public int getLightColor(float partialTick) {
-        int i = super.getLightColor(partialTick);
+    protected int getLightCoords(float partialTick) {
+        int i = super.getLightCoords(partialTick);
         float f = (float) age / (float) lifetime;
         f *= f;
         f *= f;
@@ -104,10 +105,9 @@ public class PinkEnchantParticle extends TextureSheetParticle {
         }
 
         @Override
-        public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double xd, double yd, double zd) {
-            PinkEnchantParticle particle = new PinkEnchantParticle(level, x, y, z, xd, yd, zd);
-            particle.pickSprite(sprites);
-            return particle;
+        public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double xd, double yd, double zd,
+                                       RandomSource random) {
+            return new PinkEnchantParticle(level, x, y, z, xd, yd, zd, sprites.get(random));
         }
     }
 }

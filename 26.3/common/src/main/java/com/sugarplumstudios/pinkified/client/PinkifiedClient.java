@@ -7,16 +7,18 @@ import com.sugarplumstudios.pinkified.client.sound.MusicHooks;
 import com.sugarplumstudios.pinkified.client.texture.GuiSpriteThemer;
 import com.sugarplumstudios.pinkified.client.texture.ThemedTextures;
 import com.sugarplumstudios.pinkified.client.theme.Themes;
+import com.sugarplumstudios.pinkified.client.util.Ids;
 import com.sugarplumstudios.pinkified.platform.Services;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 
 /**
  * Client entry point shared by every loader. The loader projects call {@link #init()} once and forward their events
- * (client tick, atlas stitching, screen and HUD hooks) to the hook classes.
+ * (client tick, resource reloads, screen and HUD hooks) to the hook classes.
  */
 public final class PinkifiedClient {
-    public static final KeyMapping OPEN_SETTINGS = Services.PLATFORM.createSettingsKey("key.pinkified.settings", "key.categories.pinkified");
+    public static final KeyMapping.Category KEY_CATEGORY = new KeyMapping.Category(Ids.mod("pinkified"));
+    public static final KeyMapping OPEN_SETTINGS = Services.PLATFORM.createSettingsKey("key.pinkified.settings", KEY_CATEGORY);
 
     private static int configCheck;
 
@@ -40,7 +42,7 @@ public final class PinkifiedClient {
     public static void onClientTick() {
         Minecraft mc = Minecraft.getInstance();
         while (OPEN_SETTINGS.consumeClick()) {
-            if (!(mc.screen instanceof PinkSettingsScreen)) mc.setScreen(new PinkSettingsScreen(mc.screen));
+            if (!(mc.gui.screen() instanceof PinkSettingsScreen)) mc.gui.setScreen(new PinkSettingsScreen(mc.gui.screen()));
         }
         // the file watcher: a hand-edited config applies without a restart
         if (++configCheck >= 40) {

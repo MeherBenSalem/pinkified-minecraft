@@ -49,7 +49,6 @@ public final class HudHooks {
         Options o = mc.options;
         if (o.hideGui || mc.player == null || mc.gameMode == null || !o.getCameraType().isFirstPerson()) return;
         if (mc.gameMode.getPlayerMode() == GameType.SPECTATOR && !canSpectatorTarget(mc, mc.hitResult)) return;
-        if (mc.getDebugOverlay().showDebugScreen() && !mc.player.isReducedDebugInfo() && !o.reducedDebugInfo().get()) return;
         int c = ThemedTextures.CROSSHAIR_CELL;
         g.blit(RenderPipelines.GUI_TEXTURED, ThemedTextures.CROSSHAIRS, (width - c) / 2, (height - c) / 2, style.ordinal() * c, 0, c, c,
                 c * CrosshairStyle.values().length, c);

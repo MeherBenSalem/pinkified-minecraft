@@ -7,7 +7,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.client.gui.ModListScreen;
+import net.neoforged.neoforge.client.gui.modlist.ModListScreen;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.internal.BrandingControl;
 
@@ -31,8 +31,10 @@ public final class NeoForgePlatform implements PinkPlatform {
     }
 
     @Override
-    public KeyMapping createSettingsKey(String name, String category) {
-        return new KeyMapping(name, KeyConflictContext.UNIVERSAL, InputConstants.UNKNOWN, category);
+    public KeyMapping createSettingsKey(String name, KeyMapping.Category category) {
+        KeyMapping key = new KeyMapping(name, InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
+        key.setKeyConflictContext(KeyConflictContext.UNIVERSAL);
+        return key;
     }
 
     @Override
@@ -42,7 +44,7 @@ public final class NeoForgePlatform implements PinkPlatform {
 
     @Override
     public Screen modListScreen(Screen parent) {
-        return new ModListScreen(parent);
+        return ModListScreen.create(parent);
     }
 
     @Override

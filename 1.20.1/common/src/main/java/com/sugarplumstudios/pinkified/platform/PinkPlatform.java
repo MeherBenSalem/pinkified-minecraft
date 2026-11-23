@@ -1,6 +1,7 @@
 package com.sugarplumstudios.pinkified.platform;
 
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -35,4 +36,7 @@ public interface PinkPlatform {
 
     /** Lines the loader shows above the copyright text in the bottom-right corner (index 0 is the lowest). */
     void forEachAboveCopyrightLine(BiConsumer<Integer, String> consumer);
+
+    /** The list's bounds as {left, right, top, bottom} (vanilla 1.20.1 keeps them in protected fields). */
+    int[] listBounds(AbstractSelectionList<?> list);
 }

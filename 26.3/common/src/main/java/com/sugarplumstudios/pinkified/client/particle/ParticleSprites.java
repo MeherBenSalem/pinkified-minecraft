@@ -2,8 +2,9 @@ package com.sugarplumstudios.pinkified.client.particle;
 
 import com.sugarplumstudios.pinkified.client.util.Ids;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.data.AtlasIds;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
 import java.util.HashMap;
@@ -23,14 +24,14 @@ public final class ParticleSprites {
     public static TextureAtlasSprite get(String name) {
         TextureAtlasSprite cached = CACHE.get(name);
         if (cached != null) return cached;
-        AbstractTexture tex = Minecraft.getInstance().getTextureManager().getTexture(TextureAtlas.LOCATION_PARTICLES);
-        if (!(tex instanceof TextureAtlas atlas)) return null;
+        TextureAtlas atlas = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.PARTICLES);
         TextureAtlasSprite sprite = atlas.getSprite(Ids.mod(name));
+        if (sprite == null) sprite = atlas.getSprite(MissingTextureAtlasSprite.getLocation());
         CACHE.put(name, sprite);
         return sprite;
     }
 
-    /** Called after the particle atlas is rebuilt. */
+    /** Called after the particle atlas is rebuilt (resource reload). */
     public static void invalidate() {
         CACHE.clear();
     }

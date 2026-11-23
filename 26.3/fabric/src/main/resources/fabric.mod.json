@@ -20,6 +20,7 @@
         ]
     },
     "mixins": [
+        "pinkified.mixins.json",
         "pinkified.fabric.mixins.json"
     ],
     "depends": {

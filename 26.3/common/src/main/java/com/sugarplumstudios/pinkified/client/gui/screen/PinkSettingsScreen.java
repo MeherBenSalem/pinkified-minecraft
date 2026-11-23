@@ -401,7 +401,7 @@ public class PinkSettingsScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 
     // ------------------------------------------------------------------ rendering
@@ -414,15 +414,14 @@ public class PinkSettingsScreen extends Screen {
     /** The backdrop and the settings panel; vanilla's render draws the tab buttons over it. */
     @Override
     public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
-        float offset = appearOffset();
-        g.pose().pushMatrix();
-        g.pose().translate(0, -offset);
+        // The framework draws the background apart from extractRenderState, so only the panel slides in here.
         if (minecraft.level == null) {
             MenuBackdrop.INSTANCE.renderMenu(g, width, height);
         } else {
             super.extractBackground(g, mouseX, mouseY, partialTick);
         }
-        g.pose().popMatrix();
+        g.pose().pushMatrix();
+        g.pose().translate(0, appearOffset());
         Palette p = Themes.palette();
 
         RenderKit.softShadow(g, px, py, pw, ph, 8, p.ink, 4);
@@ -444,6 +443,7 @@ public class PinkSettingsScreen extends Screen {
         g.fill(cx - 6, py + 28, cx - 5, py + ph - 32, Colors.withAlpha(p.light, 0x30));
         PinkButton sel = tabButtons.get(tab.ordinal());
         RenderKit.roundedOutline(g, sel.getX() - 2, sel.getY() - 2, sel.getWidth() + 4, sel.getHeight() + 4, 5, p.light);
+        g.pose().popMatrix();
     }
 
     @Override

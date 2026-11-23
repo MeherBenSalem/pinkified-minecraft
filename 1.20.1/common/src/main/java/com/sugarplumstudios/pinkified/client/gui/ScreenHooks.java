@@ -7,6 +7,7 @@ import com.sugarplumstudios.pinkified.client.gui.widget.PinkButton;
 import com.sugarplumstudios.pinkified.client.theme.Palette;
 import com.sugarplumstudios.pinkified.client.theme.Themes;
 import com.sugarplumstudios.pinkified.client.util.Colors;
+import com.sugarplumstudios.pinkified.platform.Services;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -113,9 +114,10 @@ public final class ScreenHooks {
         Palette p = Themes.palette();
         for (GuiEventListener child : screen.children()) {
             if (child instanceof AbstractSelectionList<?> list) {
-                int left = Math.max(list.getLeft(), list.getRowLeft() - 8);
-                int right = Math.min(list.getRight(), list.getRowLeft() + list.getRowWidth() + 14);
-                int top = list.getTop(), bottom = list.getBottom();
+                int[] b = Services.PLATFORM.listBounds(list);
+                int left = Math.max(b[0], list.getRowLeft() - 8);
+                int right = Math.min(b[1], list.getRowLeft() + list.getRowWidth() + 14);
+                int top = b[2], bottom = b[3];
                 if (right - left < 20 || bottom - top < 10) continue;
                 RenderKit.roundedRect(g, left, top, right - left, bottom - top, 5, Colors.withAlpha(p.ink, 0x9C));
                 RenderKit.roundedOutline(g, left, top, right - left, bottom - top, 5, Colors.withAlpha(p.light, 0x70));
@@ -125,11 +127,10 @@ public final class ScreenHooks {
 
     // ------------------------------------------------------------------ container decorations
 
-    /** Right after a container screen drew its background texture. */
-    public static void onContainerBackground(AbstractContainerScreen<?> screen, GuiGraphics g) {
+    /** Right after a container screen drew its background texture (window at left, top, size w x h). */
+    public static void onContainerBackground(AbstractContainerScreen<?> screen, GuiGraphics g, int left, int top, int w, int h) {
         if (!PinkConfig.on(PinkConfig.CONTAINER_DECORATIONS) || !PinkConfig.on(PinkConfig.THEME_CONTAINERS)) return;
         if (screen instanceof CreativeModeInventoryScreen) return;
-        int left = screen.getGuiLeft(), top = screen.getGuiTop(), w = screen.getXSize(), h = screen.getYSize();
         if (w < 80 || h < 60) return;
         Palette p = Themes.palette();
         float sway = Anim.intensity() > 0 ? (float) Math.sin(Anim.seconds() * 1.7f) * 4f * Math.min(1f, Anim.intensity()) : 0f;

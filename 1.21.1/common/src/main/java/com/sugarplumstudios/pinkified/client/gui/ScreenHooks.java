@@ -118,11 +118,10 @@ public final class ScreenHooks {
 
     // ------------------------------------------------------------------ container decorations
 
-    /** Right after a container screen drew its background texture. */
-    public static void onContainerBackground(AbstractContainerScreen<?> screen, GuiGraphics g) {
+    /** Right after a container screen drew its background texture (window at left, top, size w x h). */
+    public static void onContainerBackground(AbstractContainerScreen<?> screen, GuiGraphics g, int left, int top, int w, int h) {
         if (!PinkConfig.on(PinkConfig.CONTAINER_DECORATIONS) || !PinkConfig.on(PinkConfig.THEME_CONTAINERS)) return;
         if (screen instanceof CreativeModeInventoryScreen) return;
-        int left = screen.getGuiLeft(), top = screen.getGuiTop(), w = screen.getXSize(), h = screen.getYSize();
         if (w < 80 || h < 60) return;
         Palette p = Themes.palette();
         float sway = Anim.intensity() > 0 ? (float) Math.sin(Anim.seconds() * 1.7f) * 4f * Math.min(1f, Anim.intensity()) : 0f;

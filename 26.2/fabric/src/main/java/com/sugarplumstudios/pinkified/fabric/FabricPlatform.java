@@ -35,7 +35,7 @@ public final class FabricPlatform implements PinkPlatform {
     }
 
     @Override
-    public KeyMapping createSettingsKey(String name, String category) {
+    public KeyMapping createSettingsKey(String name, KeyMapping.Category category) {
         return new KeyMapping(name, InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category);
     }
 
@@ -60,12 +60,8 @@ public final class FabricPlatform implements PinkPlatform {
     @Override
     public void forEachBrandingLine(BiConsumer<Integer, String> consumer) {
         Minecraft mc = Minecraft.getInstance();
-        String line = "Minecraft " + SharedConstants.getCurrentVersion().getName();
-        if (mc.isDemo()) {
-            line = line + " Demo";
-        } else {
-            line = line + ("release".equalsIgnoreCase(mc.getVersionType()) ? "" : "/" + mc.getVersionType());
-        }
+        String line = "Minecraft " + SharedConstants.getCurrentVersion().name();
+        if (mc.isDemo()) line = line + " Demo";
         if (Minecraft.checkModStatus().shouldReportAsModified()) line = line + I18n.get("menu.modded");
         consumer.accept(0, line);
     }

@@ -17,7 +17,7 @@ public interface PinkPlatform {
     boolean isModLoaded(String modId);
 
     /** The key mapping that opens the Pinkified settings (unbound by default). */
-    KeyMapping createSettingsKey(String name, String category);
+    KeyMapping createSettingsKey(String name, KeyMapping.Category category);
 
     /** Label of the "Mods" button on the Pinkified main menu, or null when this loader has no mod list to open. */
     @Nullable

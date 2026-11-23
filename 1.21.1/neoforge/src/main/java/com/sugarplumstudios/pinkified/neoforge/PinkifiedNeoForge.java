@@ -10,6 +10,7 @@ import com.sugarplumstudios.pinkified.client.sound.MusicHooks;
 import com.sugarplumstudios.pinkified.client.texture.ThemedTextures;
 import com.sugarplumstudios.pinkified.client.theme.Themes;
 import com.sugarplumstudios.pinkified.client.util.Ids;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.particles.ParticleTypes;
@@ -64,7 +65,10 @@ public final class PinkifiedNeoForge {
         bus.addListener(ScreenEvent.BackgroundRendered.class,
                 event -> ScreenHooks.onBackgroundRendered(event.getScreen(), event.getGuiGraphics()));
         bus.addListener(ContainerScreenEvent.Render.Background.class,
-                event -> ScreenHooks.onContainerBackground(event.getContainerScreen(), event.getGuiGraphics()));
+                event -> {
+                    AbstractContainerScreen<?> s = event.getContainerScreen();
+                    ScreenHooks.onContainerBackground(s, event.getGuiGraphics(), s.getGuiLeft(), s.getGuiTop(), s.getXSize(), s.getYSize());
+                });
         bus.addListener(ScreenEvent.Render.Pre.class, event -> {
             if (ScreenHooks.onRenderPre(event.getScreen(), event.getGuiGraphics(), event.getMouseX(), event.getMouseY(),
                     event.getPartialTick())) {

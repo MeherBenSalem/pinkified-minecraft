@@ -2,13 +2,12 @@ package com.sugarplumstudios.pinkified.client.particle;
 
 import com.sugarplumstudios.pinkified.client.util.Colors;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.TextureSheetParticle;
+import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.Mth;
 
 /** Pinkified's cosmetic particles: rising hearts, twinkling sparkles, drifting petals and popping flowers. */
-public class PinkParticle extends TextureSheetParticle {
+public class PinkParticle extends SingleQuadParticle {
     public enum Kind {HEART, SPARKLE, PETAL, FLOWER}
 
     private static final String[] SPARKLE_FRAMES = {"sparkle_0", "sparkle_1", "sparkle_2", "sparkle_3", "sparkle_2", "sparkle_1"};
@@ -20,12 +19,14 @@ public class PinkParticle extends TextureSheetParticle {
     private final boolean glow;
 
     public PinkParticle(ClientLevel level, double x, double y, double z, double vx, double vy, double vz, Kind kind, int tint) {
-        super(level, x, y, z);
+        super(level, x, y, z, ParticleSprites.get(firstSprite(kind)));
         this.kind = kind;
         this.xd = vx;
         this.yd = vy;
         this.zd = vz;
-        setColor(Colors.red(tint) / 255f, Colors.green(tint) / 255f, Colors.blue(tint) / 255f);
+        this.rCol = Colors.red(tint) / 255f;
+        this.gCol = Colors.green(tint) / 255f;
+        this.bCol = Colors.blue(tint) / 255f;
         this.swayPhase = random.nextFloat() * Mth.TWO_PI;
         switch (kind) {
             case HEART -> {
@@ -74,6 +75,15 @@ public class PinkParticle extends TextureSheetParticle {
         this.oRoll = roll;
     }
 
+    private static String firstSprite(Kind kind) {
+        return switch (kind) {
+            case HEART -> "heart";
+            case SPARKLE -> SPARKLE_FRAMES[0];
+            case PETAL -> "petal_0";
+            default -> "flower_0";
+        };
+    }
+
     private void sprite(String name) {
         TextureAtlasSprite s = ParticleSprites.get(name);
         if (s != null) setSprite(s);
@@ -112,12 +122,12 @@ public class PinkParticle extends TextureSheetParticle {
     }
 
     @Override
-    public int getLightColor(float partialTick) {
-        return glow ? 0xF000F0 : super.getLightColor(partialTick);
+    protected int getLightCoords(float partialTick) {
+        return glow ? 0xF000F0 : super.getLightCoords(partialTick);
     }
 
     @Override
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+    protected Layer getLayer() {
+        return Layer.TRANSLUCENT;
     }
 }

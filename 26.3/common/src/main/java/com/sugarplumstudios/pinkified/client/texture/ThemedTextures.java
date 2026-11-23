@@ -10,11 +10,11 @@ import com.sugarplumstudios.pinkified.client.util.Ids;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.metadata.texture.TextureMetadataSection;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
@@ -32,7 +32,7 @@ import java.util.Optional;
  * modded screens that draw those textures pick up the theme with no code changes. Switching
  * themes only re-uploads pixels, so it is instant and needs no resource reload.
  */
-public final class ThemedTextures implements ResourceManagerReloadListener {
+public final class ThemedTextures extends SimplePreparableReloadListener<Map<Identifier, Canvas>> {
     public static final ThemedTextures INSTANCE = new ThemedTextures();
     public static final Identifier CROSSHAIRS = Ids.mod("dynamic/crosshairs");
     /** Width of one crosshair cell in {@link #CROSSHAIRS}. */
@@ -44,7 +44,6 @@ public final class ThemedTextures implements ResourceManagerReloadListener {
         final ThemedArt.Target target;
         final Identifier id;
         Canvas source;
-        boolean blur, clamp;
         DynamicTexture texture;
 
         Entry(ThemedArt.Target target) {
@@ -64,22 +63,25 @@ public final class ThemedTextures implements ResourceManagerReloadListener {
         }
     }
 
+    /** Reads the original images from the active resource packs (off the render thread). */
     @Override
-    public void onResourceManagerReload(ResourceManager manager) {
+    protected Map<Identifier, Canvas> prepare(ResourceManager manager, ProfilerFiller profiler) {
+        Map<Identifier, Canvas> sources = new LinkedHashMap<>();
         for (Entry e : entries.values()) {
-            e.source = null;
             Optional<Resource> res = manager.getResource(e.id);
             if (res.isEmpty()) continue;
             try (InputStream in = res.get().open(); NativeImage img = NativeImage.read(in)) {
-                e.source = toCanvas(img);
-                Optional<TextureMetadataSection> meta = res.get().metadata().getSection(TextureMetadataSection.SERIALIZER);
-                e.blur = meta.map(TextureMetadataSection::isBlur).orElse(false);
-                e.clamp = meta.map(TextureMetadataSection::isClamp).orElse(false);
+                sources.put(e.id, toCanvas(img));
             } catch (Exception ex) {
                 LOGGER.warn("Pinkified could not read {}; leaving it untouched", e.id, ex);
-                e.source = null;
             }
         }
+        return sources;
+    }
+
+    @Override
+    protected void apply(Map<Identifier, Canvas> sources, ResourceManager manager, ProfilerFiller profiler) {
+        for (Entry e : entries.values()) e.source = sources.get(e.id);
         loaded = true;
         apply();
         GuiSpriteThemer.markDirty();
@@ -108,9 +110,9 @@ public final class ThemedTextures implements ResourceManagerReloadListener {
                 }
                 continue;
             }
-            e.texture = upload(tm, e.id, e.texture, out, e.blur, e.clamp);
+            e.texture = upload(tm, e.id, e.texture, out);
         }
-        crosshairs = upload(tm, CROSSHAIRS, crosshairs, crosshairSheet(p), false, true);
+        crosshairs = upload(tm, CROSSHAIRS, crosshairs, crosshairSheet(p));
     }
 
     public static ThemedArt.Options currentOptions() {
@@ -141,18 +143,17 @@ public final class ThemedTextures implements ResourceManagerReloadListener {
         return sheet;
     }
 
-    private static DynamicTexture upload(TextureManager tm, Identifier id, DynamicTexture tex, Canvas out, boolean blur, boolean clamp) {
+    private static DynamicTexture upload(TextureManager tm, Identifier id, DynamicTexture tex, Canvas out) {
         NativeImage pixels = tex == null ? null : tex.getPixels();
         if (tex == null || pixels == null || pixels.getWidth() != out.width || pixels.getHeight() != out.height) {
-            tex = new DynamicTexture(out.width, out.height, false);
+            tex = new DynamicTexture(() -> "Pinkified " + id, out.width, out.height, false);
             tm.register(id, tex);
             pixels = tex.getPixels();
         }
         for (int y = 0; y < out.height; y++)
             for (int x = 0; x < out.width; x++)
-                pixels.setPixelRGBA(x, y, Colors.toAbgr(out.px[y * out.width + x]));
-        tex.bind();
-        pixels.upload(0, 0, 0, 0, 0, out.width, out.height, blur, clamp, false, false);
+                pixels.setPixel(x, y, out.px[y * out.width + x]);
+        tex.upload();
         return tex;
     }
 
@@ -160,7 +161,7 @@ public final class ThemedTextures implements ResourceManagerReloadListener {
         int w = img.getWidth(), h = img.getHeight();
         Canvas c = new Canvas(w, h);
         for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++) c.px[y * w + x] = Colors.fromAbgr(img.getPixelRGBA(x, y));
+            for (int x = 0; x < w; x++) c.px[y * w + x] = img.getPixel(x, y);
         return c;
     }
 }

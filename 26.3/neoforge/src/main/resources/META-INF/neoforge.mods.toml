@@ -15,6 +15,10 @@ credits="${credits}"
 authors="${mod_author}"
 description='''${description}'''
 
+# Container decorations and the game-over screen (shared with Fabric).
+[[mixins]]
+config="${mod_id}.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"

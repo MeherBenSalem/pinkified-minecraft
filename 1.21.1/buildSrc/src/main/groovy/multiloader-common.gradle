@@ -81,6 +81,11 @@ jar {
     }
 }
 
+// Report every compile error at once, not just the first 100.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xmaxerrs', '10000']
+}
+
 processResources {
     filteringCharset = 'UTF-8'
     var expandProps = [
