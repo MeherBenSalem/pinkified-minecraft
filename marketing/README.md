@@ -88,7 +88,7 @@ No other copy or artwork names a Minecraft version. A new release number goes in
 
 ### Where the pictures come from
 
-- **Screenshots** are unedited in-game captures, converted to JPEG. They were taken in GitHub Actions by the mod's own screenshot harness (`./gradlew runSnapshots`, `client/dev/DevSnapshots.java`) at 1920×1080 under a virtual display: it visits the main menu in every theme, each settings tab, the options and multiplayer screens, then creates a throwaway world and opens the inventory, crafting, furnace, anvil, enchanting, chest, creative, pause and game-over screens. The 1920×1080 window size is set in `build.gradle` on the `release/1.0.0` branch.
+- **Screenshots** are unedited in-game captures, converted to JPEG. They were taken in GitHub Actions by the mod's own screenshot harness (`./gradlew runSnapshots`, `client/dev/DevSnapshots.java`) at 1920×1080 under a virtual display: it visits the main menu in every theme, each settings tab, the options and multiplayer screens, then creates a throwaway world and opens the inventory, crafting, furnace, anvil, enchanting, chest, creative, pause and game-over screens. The 1920×1080 window size is set on the `snapshots` run in `build.gradle`.
 - **HUD sprites** on the cards, banner and icon (hearts, treats, armor, bubbles, crosshairs) are painted without Minecraft by [`source/HudRenders.java`](source/HudRenders.java), which calls the mod's own `HudSprites` pixel art for each theme. They are in `source/renders/`, 24 PNGs per theme.
 - **Particle sprites** are the mod's own textures from `src/main/resources/assets/pinkified/textures/particle/`.
 
