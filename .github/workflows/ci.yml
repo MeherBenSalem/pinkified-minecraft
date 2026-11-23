@@ -358,7 +358,10 @@ jobs:
           grep -n "\[pinkified\] self-test" "$log" || true
           if grep -q "\[pinkified\] self-test FAILED" "$log"; then grep -n -A40 "self-test FAILED" "$log" | head -80; exit 1; fi
           grep -q "\[pinkified\] self-test passed" "$log" || { echo "The self-test did not finish"; tail -80 "$log"; exit 1; }
-          if grep -E "ERROR|Exception|Caused by" "$log" | grep -E 'com.sugarplumstudios|pinkified([^-.a-z]|$)|[Mm]ixin'; then echo "The log has errors naming Pinkified or a mixin"; exit 1; fi
+          # NeoForge shows its loading-issues screen instead of the menu when a mod has errors or warnings
+          if grep -q "self-test: menu up (.*LoadingErrorScreen)" "$log"; then grep -n -E "WARN.*LOADING|ERROR.*LOADING" "$log"; echo "Mod loading reported problems"; exit 1; fi
+          # (the narrator's missing libflite trace prints the whole classpath, which names the mod's folders)
+          if grep -E "ERROR|Exception|Caused by" "$log" | grep -v -E "flite|Narrator|resource path" | grep -E 'com\.sugarplumstudios|[Mm]ixin'; then echo "The log has errors naming Pinkified or a mixin"; exit 1; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -57,9 +57,11 @@ public final class GuiSpriteThemer {
         // mob effect icons are stitched into the GUI atlas (as mob_effect/<name>)
         TextureAtlas effects = gui;
         TextureAtlas particles = atlas(AtlasIds.PARTICLES);
-        Object g = gui == null ? null : gui.getSprite(GUI_PROBE);
-        Object e = effects == null ? null : effects.getSprite(EFFECT_PROBE);
-        Object pt = particles == null ? null : particles.getSprite(PARTICLE_PROBE);
+        Object g = sprite(gui, GUI_PROBE);
+        Object e = sprite(effects, EFFECT_PROBE);
+        Object pt = sprite(particles, PARTICLE_PROBE);
+        // an atlas exists before its first stitch finishes; wait until it can be read
+        if (gui != null && g == null) return;
         if (pt != particleSeen) {
             particleSeen = pt;
             ParticleSprites.invalidate();
@@ -76,6 +78,16 @@ public final class GuiSpriteThemer {
         try {
             return Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(id);
         } catch (RuntimeException notLoadedYet) {
+            return null;
+        }
+    }
+
+    /** The sprite, or null while the atlas has not been stitched yet. */
+    private static TextureAtlasSprite sprite(TextureAtlas atlas, Identifier id) {
+        if (atlas == null) return null;
+        try {
+            return atlas.getSprite(id);
+        } catch (IllegalStateException notStitchedYet) {
             return null;
         }
     }
@@ -102,8 +114,8 @@ public final class GuiSpriteThemer {
     }
 
     private static void add(TextureAtlas atlas, Identifier id, String path, Resource resource, boolean effect) {
-        TextureAtlasSprite sprite = atlas.getSprite(id);
-        if (!sprite.contents().name().equals(id)) return; // not stitched (missing sprite)
+        TextureAtlasSprite sprite = sprite(atlas, id);
+        if (sprite == null || !sprite.contents().name().equals(id)) return; // not stitched (missing sprite)
         int w = sprite.contents().width(), h = sprite.contents().height();
         try (InputStream in = resource.open(); NativeImage img = NativeImage.read(in)) {
             // animated sprites (taller files) are left alone

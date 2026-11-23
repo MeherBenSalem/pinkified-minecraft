@@ -54,9 +54,11 @@ public final class GuiSpriteThemer {
         TextureAtlas gui = atlas(GUI_ATLAS);
         TextureAtlas effects = atlas(EFFECT_ATLAS);
         TextureAtlas particles = atlas(TextureAtlas.LOCATION_PARTICLES);
-        Object g = gui == null ? null : gui.getSprite(GUI_PROBE);
-        Object e = effects == null ? null : effects.getSprite(EFFECT_PROBE);
-        Object pt = particles == null ? null : particles.getSprite(PARTICLE_PROBE);
+        Object g = sprite(gui, GUI_PROBE);
+        Object e = sprite(effects, EFFECT_PROBE);
+        Object pt = sprite(particles, PARTICLE_PROBE);
+        // an atlas is registered before its first stitch finishes; wait until both can be read
+        if ((gui != null && g == null) || (effects != null && e == null)) return;
         if (pt != particleSeen) {
             particleSeen = pt;
             ParticleSprites.invalidate();
@@ -72,6 +74,16 @@ public final class GuiSpriteThemer {
     private static TextureAtlas atlas(ResourceLocation id) {
         AbstractTexture t = Minecraft.getInstance().getTextureManager().getTexture(id, null);
         return t instanceof TextureAtlas a ? a : null;
+    }
+
+    /** The sprite, or null while the atlas has not been stitched yet. */
+    private static TextureAtlasSprite sprite(TextureAtlas atlas, ResourceLocation id) {
+        if (atlas == null) return null;
+        try {
+            return atlas.getSprite(id);
+        } catch (IllegalStateException notStitchedYet) {
+            return null;
+        }
     }
 
     private static void capture(ResourceManager rm, TextureAtlas gui, TextureAtlas effects) {
@@ -96,7 +108,8 @@ public final class GuiSpriteThemer {
     }
 
     private static void add(TextureAtlas atlas, ResourceLocation id, String path, Resource resource, boolean effect) {
-        TextureAtlasSprite sprite = atlas.getSprite(id);
+        TextureAtlasSprite sprite = sprite(atlas, id);
+        if (sprite == null) return;
         if (!sprite.contents().name().equals(id)) return; // not stitched (missing sprite)
         int w = sprite.contents().width(), h = sprite.contents().height();
         try (InputStream in = resource.open(); NativeImage img = NativeImage.read(in)) {
