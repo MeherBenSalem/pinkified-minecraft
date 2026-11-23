@@ -90,6 +90,11 @@ jar {
     }
 }
 
+// The javadoc jar is a by-product; comment typos must not fail the build.
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 processResources {
     filteringCharset = 'UTF-8'
     var expandProps = [

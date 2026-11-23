@@ -123,16 +123,23 @@ Everything is on by default.
 
 ![Join any server](https://raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/card-clientside.png)
 
-- **No mixins**, no access transformers, and no vanilla classes replaced. Pinkified adds no blocks, items or other registry entries.
+- **Nothing replaced:** no vanilla classes are replaced, and only a few small hooks are added where a loader has no event for them. Pinkified adds no blocks, items or other registry entries.
 - **Themed at runtime:** on every resource reload, Pinkified reads the GUI textures from your active resource packs and recolours them in memory, so vanilla and modded screens pick them up without changes.
 - **Original art:** the HUD sprites, particles, logo, music and sounds are all made for Pinkified. No Mojang texture is redistributed.
-- **Light touch:** screens are styled through Forge's screen events, and particles are spawned only on your client.
+- **Light touch:** screens are styled through your loader's screen events, and particles are spawned only on your client.
 
 ![Downloads & Compatibility](https://raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/header-compatibility.png)
 
 | Minecraft | Loader | Java | Also install |
 | --- | --- | --- | --- |
 | 1.20.1 | Forge 47 or newer | 17+ | Nothing |
+| 1.20.1 | Fabric | 17+ | Fabric API |
+| 1.21.1 | NeoForge | 21+ | Nothing |
+| 1.21.1 | Fabric | 21+ | Fabric API |
+| 26.2 | NeoForge | 25+ | Nothing |
+| 26.2 | Fabric | 25+ | Fabric API |
+| 26.3 | NeoForge | 25+ | Nothing |
+| 26.3 | Fabric | 25+ | Fabric API |
 
 - Install Pinkified on **your client only**. Servers don't need it.
 - **Resource packs:** Pinkified recolours whatever GUI textures your active packs provide. Turn off the matching settings to see a pack's art unchanged.
@@ -143,7 +150,8 @@ Everything is on by default.
 
 - Only Minecraft's own interface textures are themed. Mods with their own GUI art keep it, but still get pastel backgrounds, tooltips and recoloured vanilla buttons.
 - A few colours are fixed in Minecraft's code rather than its textures and stay vanilla: container label text, list scrollbars, boss bars and the loading screen.
-- With HD resource packs, the custom HUD sprites are only painted when `icons.png` and `widgets.png` are a multiple of 256 pixels wide.
+- On Minecraft 1.20.1 with HD resource packs, the custom HUD sprites are only painted when `icons.png` and `widgets.png` are a multiple of 256 pixels wide.
+- On Fabric, the main menu's Mods button appears when Mod Menu is installed.
 - Only English is included for now.
 
 ![Questions](https://raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/header-faq.png)
@@ -167,7 +175,7 @@ Pick **Custom** in the Theme tab and choose any two colours.
 No. They're only drawn on your screen.
 
 **Is there a Fabric or NeoForge version?**
-Not yet. Pinkified runs on Forge for Minecraft 1.20.1.
+Yes. Pinkified runs on Forge and Fabric for Minecraft 1.20.1, and on NeoForge and Fabric for 1.21.1, 26.2 and 26.3. On Fabric it needs Fabric API.
 
 ![Gallery](https://raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/header-gallery.png)
 

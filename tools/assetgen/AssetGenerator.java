@@ -11,7 +11,9 @@ import java.util.Map;
  * All art is original pixel art drawn procedurally from the templates below, so the
  * mod never redistributes Mojang assets. Run from the project root:
  *
- *   java tools/assetgen/AssetGenerator.java src/main/resources
+ *   java tools/assetgen/AssetGenerator.java <version>/common/src/main/resources
+ *
+ * (once for each workspace: 1.20.1, 1.21.1, 26.2 and 26.3 ship the same art)
  *
  * Sprites that the mod tints at runtime (menu decorations, particles, logo base) are
  * drawn in grayscale so a single texture can follow any theme colour.
@@ -793,7 +795,7 @@ public final class AssetGenerator {
     // ------------------------------------------------------------------ main
 
     public static void main(String[] args) throws IOException {
-        root = new File(args.length > 0 ? args[0] : "src/main/resources");
+        root = new File(args.length > 0 ? args[0] : "1.20.1/common/src/main/resources");
         String tex = "assets/pinkified/textures/";
         System.out.println("Pinkified asset generator -> " + root.getAbsolutePath());
 

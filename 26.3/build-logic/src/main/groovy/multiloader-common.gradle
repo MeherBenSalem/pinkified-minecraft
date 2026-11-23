@@ -39,6 +39,11 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-Xmaxerrs', '10000']
 }
 
+// The javadoc jar is a by-product; comment typos must not fail the build.
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 processResources {
     var expandProps = [
             'version'                      : version,

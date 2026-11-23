@@ -1,6 +1,6 @@
 // Renders the listing artwork in marketing/images/ from real in-game screenshots (marketing/images/screenshots/), the
 // mod's own HUD pixel art (marketing/source/renders/, painted by HudRenders.java), the mod's particle and menu sprites
-// (src/main/resources), the mod logo and the bundled OFL fonts. Usage (from the repository root):
+// (1.20.1/common/src/main/resources, the same art in every workspace), the mod logo and the bundled OFL fonts. Usage (from the repository root):
 //   NODE_PATH="$(npm root -g)" node marketing/source/render.cjs [name...]
 // Requires the `playwright` package with a Chromium build available. Set CHROMIUM to a Chromium executable to use
 // that one instead of Playwright's own download.
@@ -12,7 +12,10 @@ const { chromium } = require('playwright');
 // (plus one row in the compatibility tables of curseforge/description.md and modrinth/description.md).
 const RELEASE = { version: '1.0' };
 const VERSIONS = [
-  { minecraft: '1.20.1', loaders: ['Forge'] },
+  { minecraft: '1.20.1', loaders: ['Fabric', 'Forge'] },
+  { minecraft: '1.21.1', loaders: ['Fabric', 'NeoForge'] },
+  { minecraft: '26.2', loaders: ['Fabric', 'NeoForge'] },
+  { minecraft: '26.3', loaders: ['Fabric', 'NeoForge'] },
 ];
 const LOADERS = ['Fabric', 'Forge', 'NeoForge'].filter((loader) => VERSIONS.some((v) => v.loaders.includes(loader)));
 
@@ -21,7 +24,7 @@ const out = path.join(root, 'marketing', 'images');
 const shots = path.join(out, 'screenshots');
 const fonts = path.join(__dirname, 'fonts');
 const renders = path.join(__dirname, 'renders');
-const textures = path.join(root, 'src', 'main', 'resources', 'assets', 'pinkified', 'textures');
+const textures = path.join(root, '1.20.1', 'common', 'src', 'main', 'resources', 'assets', 'pinkified', 'textures');
 const url = (file) => 'file://' + file;
 const shot = (name) => url(path.join(shots, name));
 const source = (name) => url(path.join(__dirname, name));
@@ -194,7 +197,7 @@ const assets = {
       <div class="rule" style="width:640px;margin:18px 0 24px"></div>
       <div style="font-family:PkDisplay;font-size:42px;color:var(--plum);line-height:1.2">The Complete Pink Overhaul.</div>
       <div style="font-size:27px;color:var(--text);line-height:1.35;margin-top:8px">Six pastel themes for menus, inventories, the HUD<br>and particles. Gameplay stays exactly the same.</div>
-      <div style="margin-top:30px">${LOADERS.map((l) => `<span class="pill">${l}</span>`).join('')}<span class="pill ghost">Client-side only</span><span class="pill ghost">No dependencies</span></div>
+      <div style="margin-top:30px">${LOADERS.map((l) => `<span class="pill">${l}</span>`).join('')}<span class="pill ghost">Client-side only</span></div>
       <div style="margin-top:16px;font-family:PkDisplay;font-size:26px;color:var(--dim)">Minecraft ${versionText}</div>
     </div>
 `),
@@ -301,10 +304,10 @@ ${cm('# 34 settings in all')}`)}</div>` }),
 
   'card-clientside': () => card({
     kicker: 'Client-side only', title: 'Join any<br>server',
-    points: ['Install it on your own game, servers never need it', 'A server with it installed by mistake still starts cleanly', 'No mixins, no new blocks, items or registry entries',
+    points: ['Install it on your own game, servers never need it', 'A server with it installed by mistake still starts cleanly', 'No new blocks, items or registry entries',
       'HUD mods like AppleSkin keep working', 'Prefer the vanilla title screen? It gets pink too'],
     art: framed(region('title-vanilla.jpg', 0, 0, 1920, 1080, 966)) + label('Pinkified main menu off', 'right:24px;top:22px') +
-      stats([['Server install', 'None'], ['Mixins', '0'], ['Gameplay changes', '0'], ['Mods required', 'Forge']]) }),
+      stats([['Server install', 'None'], ['Registry entries', '0'], ['Gameplay changes', '0'], ['Loaders', '3']]) }),
 };
 
 const headers = { 'header-themes': 'The Themes', 'header-menu': 'Main Menu', 'header-screens': 'Inventories & Screens',

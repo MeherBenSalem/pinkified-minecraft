@@ -73,7 +73,7 @@ public class PinkSettingsScreen extends Screen {
         this.parent = parent;
     }
 
-    /** Opens the screen on a specific tab (0 = Theme ... 4 = Motion & Sound). */
+    /** Opens the screen on a specific tab (0 = Theme ... 4 = Motion and Sound). */
     public static PinkSettingsScreen atTab(Screen parent, int tabIndex) {
         PinkSettingsScreen s = new PinkSettingsScreen(parent);
         Tab[] tabs = Tab.values();

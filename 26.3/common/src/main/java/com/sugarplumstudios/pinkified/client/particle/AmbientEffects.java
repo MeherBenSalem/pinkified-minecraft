@@ -4,7 +4,7 @@ import com.sugarplumstudios.pinkified.client.config.PinkConfig;
 import com.sugarplumstudios.pinkified.client.theme.Palette;
 import com.sugarplumstudios.pinkified.client.theme.Themes;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.ParticleStatus;
+import net.minecraft.server.level.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;

@@ -19,7 +19,7 @@ Both descriptions lead with the pitch, then the themes, the main menu, inventori
 ### Modrinth project settings
 
 - **Environment:** required on the client, unsupported on the server.
-- **Loader and version:** Forge, Minecraft 1.20.1.
+- **Loaders and versions:** Forge and Fabric for Minecraft 1.20.1; NeoForge and Fabric for 1.21.1, 26.2 and 26.3. Each release uploads 8 jars, one per loader and version.
 - **Gallery:** upload the screenshots below with their captions (the same as the alt texts in the CurseForge gallery), and `images/banner.png` as the featured image.
 
 | Screenshot | Caption |
@@ -71,7 +71,7 @@ No other copy or artwork names a Minecraft version. A new release number goes in
 
 | File | Size | Use |
 | --- | --- | --- |
-| `images/banner.png` | 1800×600, 502 KB | Description header: the title, "The Complete Pink Overhaul.", the Forge, client-side and no-dependencies pills, and the Strawberry Milk main menu |
+| `images/banner.png` | 1800×600, 502 KB | Description header: the title, "The Complete Pink Overhaul.", the Fabric, Forge and NeoForge pills and the client-side pill, the supported Minecraft versions, and the Strawberry Milk main menu |
 | `images/icon.png` | 512×512, 128 KB | Project avatar: a Strawberry Milk heart in a candy-striped ring |
 | `images/card-themes.png` | 1600×900, 670 KB | The six themes and Custom, each with its main menu, heart, treat, armor and colours |
 | `images/card-menu.png` | 1600×900, 731 KB | The main menu in Strawberry Milk, plus four more themes |
@@ -88,16 +88,16 @@ No other copy or artwork names a Minecraft version. A new release number goes in
 
 ### Where the pictures come from
 
-- **Screenshots** are unedited in-game captures, converted to JPEG. They were taken in GitHub Actions by the mod's own screenshot harness (`./gradlew runSnapshots`, `client/dev/DevSnapshots.java`) at 1920×1080 under a virtual display: it visits the main menu in every theme, each settings tab, the options and multiplayer screens, then creates a throwaway world and opens the inventory, crafting, furnace, anvil, enchanting, chest, creative, pause and game-over screens. The 1920×1080 window size is set on the `snapshots` run in `build.gradle`.
+- **Screenshots** are unedited in-game captures, converted to JPEG. They were taken in GitHub Actions by the mod's own screenshot harness (`cd 1.20.1 && ./gradlew :forge:runSnapshots`, `1.20.1/common/.../client/dev/DevSnapshots.java`; they were taken on Forge 1.20.1 and look the same on every loader and version) at 1920×1080 under a virtual display: it visits the main menu in every theme, each settings tab, the options and multiplayer screens, then creates a throwaway world and opens the inventory, crafting, furnace, anvil, enchanting, chest, creative, pause and game-over screens. The 1920×1080 window size is set on the `snapshots` run in `1.20.1/forge/build.gradle` (and `1.20.1/fabric/build.gradle`).
 - **HUD sprites** on the cards, banner and icon (hearts, treats, armor, bubbles, crosshairs) are painted without Minecraft by [`source/HudRenders.java`](source/HudRenders.java), which calls the mod's own `HudSprites` pixel art for each theme. They are in `source/renders/`, 24 PNGs per theme.
-- **Particle sprites** are the mod's own textures from `src/main/resources/assets/pinkified/textures/particle/`.
+- **Particle sprites** are the mod's own textures from `1.20.1/common/src/main/resources/assets/pinkified/textures/particle/` (the same in every workspace).
 
 ## Regenerating the artwork
 
 Repaint the HUD sprites (from the repository root):
 
 ```bash
-S=src/main/java/com/sugarplumstudios/pinkified/client
+S=1.20.1/common/src/main/java/com/sugarplumstudios/pinkified/client
 javac -d build/hudrenders $S/util/Colors.java $S/theme/Palette.java $S/theme/ThemeId.java $S/theme/FoodStyle.java \
   $S/theme/CrosshairStyle.java $S/texture/Canvas.java $S/texture/HudSprites.java $S/texture/Recolor.java \
   $S/texture/Patterns.java marketing/source/HudRenders.java
@@ -112,7 +112,7 @@ NODE_PATH="$(npm root -g)" node marketing/source/render.cjs banner icon  # selec
 ```
 
 - Set `CHROMIUM=/path/to/chromium` to render with a Chromium other than Playwright's own download.
-- `source/logo.png` is the mod-list logo (`src/main/resources/pinkified_logo.png`).
+- `source/logo.png` is the mod-list logo (`1.20.1/common/src/main/resources/pinkified_logo.png`).
 - `source/fonts/` holds Fredoka and Nunito with their SIL Open Font License 1.1 texts. The script uses only these files.
 
 Theme names, colours and treats on the cards are written at the top of `render.cjs`, copied from `theme/Palette.java` and the lang file. Update them when those change.

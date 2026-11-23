@@ -1,7 +1,7 @@
 package com.sugarplumstudios.pinkified.client.gui;
 
 import com.sugarplumstudios.pinkified.client.config.PinkConfig;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 
 /** Time and easing helpers that respect the player's animation settings. */
 public final class Anim {

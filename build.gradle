@@ -75,7 +75,8 @@ workspaces.each { key, ws ->
         group = 'build'
         description = "Build all ${ws.dir} loaders (${ws.loaders.collect { loaderNames[it] }.join(' + ')})."
         workingDir = file(ws.dir)
-        commandLine wrapperCmd(ws.dir), 'build', toolchainEnv
+        // --continue: report every failing project of the workspace, not just the first
+        commandLine wrapperCmd(ws.dir), 'build', '--continue', toolchainEnv
         if (javaHome) environment 'JAVA_HOME', javaHome
     }
     // One workspace at a time: each runs its own Gradle with -Xmx3G.

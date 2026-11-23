@@ -14,7 +14,7 @@ import java.io.File;
  * Developer tool: renders Pinkified's runtime texture pipeline offline so themes can be
  * reviewed without launching the game.
  *
- *   javac -d build/preview src/main/java/.../util/Colors.java ... tools/preview/ThemePreview.java
+ *   javac -d build/preview 1.20.1/common/src/main/java/.../util/Colors.java ... tools/preview/ThemePreview.java
  *   java -cp build/preview ThemePreview <extracted vanilla assets/minecraft dir> <out dir>
  *
  * Vanilla textures are read from a local copy of the game's own assets and never committed.
