@@ -63,12 +63,8 @@ jobs:
         run: python3 scripts/check_targets.py workspaces
       - name: Check the Python and shell tools compile
         run: |
-          python3 -m py_compile scripts/*.py tools/*.py
+          python3 -m py_compile scripts/*.py
           for f in scripts/*.sh; do bash -n "$f"; done
-      - name: The Modrinth description is generated from the CurseForge one
-        run: |
-          python3 tools/make_modrinth_md.py
-          git diff --exit-code -- marketing/modrinth
 
   build:
     name: Build ${{ matrix.dir }}

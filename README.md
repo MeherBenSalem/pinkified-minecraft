@@ -129,12 +129,12 @@ check instead: once the main menu is up it loads every mixin target, opens the s
 
 CI (`.github/workflows/ci.yml`) builds all 8 jars on every push to `main` that touches the build, checks their
 metadata and contents, boots a dedicated server with the jar installed (it must start cleanly, since the mod is
-client-only) and runs the 1.20.1 screenshot harness. Publishing to Modrinth and CurseForge is
+client-only) and runs the 1.20.1 screenshot harness. Publishing (to CurseForge only) is
 `.github/workflows/publish.yml`, run by hand (`version`, `dry_run`) or by a `v*.*.*` tag; it never runs on a plain
 push. It refuses a second release of the mod on the same day (Africa/Tunis), takes the jars from `releases/`, the
 GitHub Release or a build from source, and fails unless exactly the 8 jars are found. It needs the secrets
-`MODRINTH_TOKEN`, `CURSEFORGE_TOKEN`, `CURSEFORGE_API_KEY` and the variables `MODRINTH_ID`, `CURSEFORGE_ID` (it stops
-before building when either variable is unset).
+`CURSEFORGE_TOKEN` (upload) and `CURSEFORGE_API_KEY` (Core API, for the same-day guard) and the variable
+`CURSEFORGE_ID` (a real release stops before building when it is unset; a dry run only warns).
 
 ## How it works
 

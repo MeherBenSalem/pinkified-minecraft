@@ -1,1 +1,0 @@
-A soft pastel overhaul of Minecraft's interface: six themes for menus, inventories, the HUD, tooltips and particles, plus your own colours. Client-side only, no gameplay changes, and every part can be switched off.

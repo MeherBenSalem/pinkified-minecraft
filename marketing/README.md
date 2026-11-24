@@ -1,6 +1,6 @@
 # Marketing assets: 1.0
 
-Listing copy and artwork for CurseForge and Modrinth. Nothing here ships in the mod JAR.
+Listing copy and artwork for CurseForge (NightBeam publishes to CurseForge only). Nothing here ships in the mod JAR.
 
 ## Listing
 
@@ -8,19 +8,15 @@ Listing copy and artwork for CurseForge and Modrinth. Nothing here ships in the 
 | --- | --- |
 | [`curseforge/description.md`](curseforge/description.md) | Full CurseForge project description (Markdown) |
 | [`curseforge/summary.txt`](curseforge/summary.txt) | Short CurseForge project summary (214 characters) |
-| [`modrinth/description.md`](modrinth/description.md) | Full Modrinth project body. The same copy as CurseForge, but the screenshots go in the project's Gallery tab instead of the page |
-| [`modrinth/summary.txt`](modrinth/summary.txt) | Modrinth summary (214 characters; Modrinth allows 256) |
-| `images/icon.png` | Project avatar on both sites |
+| `images/icon.png` | Project avatar |
 
-Image links in both descriptions point at `raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/...`. **They only work for visitors once this folder is on `main` and the repository is public.** While the repository is private, upload the images to each site instead (the CurseForge description editor and the Modrinth gallery both take uploads) and replace each URL.
+Image links in the description point at `raw.githubusercontent.com/MeherBenSalem/pinkified-minecraft/main/marketing/images/...`. **They only work for visitors once this folder is on `main` and the repository is public.** While the repository is private, upload the images to CurseForge instead (the description editor takes uploads) and replace each URL.
 
-Both descriptions lead with the pitch, then the themes, the main menu, inventories and screens, the HUD, cosmetic effects, music and sound, gentle touches, settings, configuration, how it works, downloads and compatibility (with the known limitations), the FAQ and (CurseForge only) a gallery.
+The description leads with the pitch, then the themes, the main menu, inventories and screens, the HUD, cosmetic effects, music and sound, gentle touches, settings, configuration, how it works, downloads and compatibility (with the known limitations), the FAQ and a gallery.
 
-### Modrinth project settings
+### Gallery screenshots
 
-- **Environment:** required on the client, unsupported on the server.
-- **Loaders and versions:** Forge and Fabric for Minecraft 1.20.1; NeoForge and Fabric for 1.21.1, 26.2 and 26.3. Each release uploads 8 jars, one per loader and version.
-- **Gallery:** upload the screenshots below with their captions (the same as the alt texts in the CurseForge gallery), and `images/banner.png` as the featured image.
+The CurseForge gallery shows these screenshots, captioned with the alt texts in `curseforge/description.md`:
 
 | Screenshot | Caption |
 | --- | --- |
@@ -62,10 +58,10 @@ Both descriptions lead with the pitch, then the themes, the main menu, inventori
 The supported versions are listed in these places:
 
 1. `VERSIONS` at the top of [`source/render.cjs`](source/render.cjs). Add one line, for example `{ minecraft: '1.21.1', loaders: ['NeoForge'] },`. The banner's loader pill and version line are built from it. Then rerun the script for `banner`.
-2. The table under **Downloads & Compatibility** in `curseforge/description.md` and `modrinth/description.md`. Add one row per loader.
-3. The FAQ answer **Is there a Fabric or NeoForge version?** in both files.
+2. The table under **Downloads & Compatibility** in `curseforge/description.md`. Add one row per loader.
+3. The FAQ answer **Is there a Fabric or NeoForge version?** in `curseforge/description.md`.
 
-No other copy or artwork names a Minecraft version. A new release number goes in `RELEASE` in `render.cjs` and in the banner's alt text on the first line of both descriptions.
+No other copy or artwork names a Minecraft version. A new release number goes in `RELEASE` in `render.cjs` and in the banner's alt text on the first line of the description.
 
 ## Images
 
@@ -82,9 +78,9 @@ No other copy or artwork names a Minecraft version. A new release number goes in
 | `images/card-settings.png` | 1600×900, 605 KB | Pinkified Settings: the Effects and HUD tabs |
 | `images/card-config.png` | 1600×900, 546 KB | An excerpt of `pinkified-client.toml` with its defaults |
 | `images/card-clientside.png` | 1600×900, 1062 KB | The recoloured vanilla title screen, with client-side facts |
-| `images/header-*.png` | 1400×120, transparent, 30–54 KB | 13 section headings for the descriptions |
+| `images/header-*.png` | 1400×120, transparent, 30–54 KB | 13 section headings for the description |
 | `images/divider.png` | 1400×40, transparent | Section divider |
-| `images/screenshots/*.jpg` | 1920×1080, 78–432 KB | 31 captures: gallery uploads and card art |
+| `images/screenshots/*.jpg` | 1920×1080, 78–432 KB | 31 captures: gallery images and card art |
 
 ### Where the pictures come from
 
